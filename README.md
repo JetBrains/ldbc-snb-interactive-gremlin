@@ -1,6 +1,11 @@
 # LDBC SNB Interactive for TinkerPop
 
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)</br>
+[![Zulip](https://img.shields.io/badge/Zulip-50ADFF?style=for-the-badge&logo=Zulip&logoColor=white)](https://youtrackdb.zulipchat.com/)
+
 A Gremlin-based implementation of the [LDBC Social Network Benchmark (SNB) Interactive v1](https://ldbcouncil.org/benchmarks/snb-interactive/) workload for TinkerPop-compatible graph databases.
+
+This project is created and maintained by the [YouTrackDB](https://github.com/JetBrains/youtrackdb) team at JetBrains.
 
 ## Overview
 
@@ -71,14 +76,16 @@ Key properties in `driver/*.properties`:
 | `thread_count` | Concurrent benchmark threads |
 | `operation_count` | Number of operations to execute |
 
-## Feedback
+## Community & Support
+
+Have questions or feedback? Join us on [Zulip](https://youtrackdb.zulipchat.com/) - we're happy to help!
+
+To report issues or suggest features, please use our [YouTrack](https://youtrack.jetbrains.com/issues/YTDB).
 
 This is an early release focused on query correctness and Gremlin patterns. We welcome feedback on:
 - Query implementations and optimizations
 - API design for database plugins
 - Missing features or documentation
-
-Please open an issue or discussion on GitHub.
 
 ## License
 
