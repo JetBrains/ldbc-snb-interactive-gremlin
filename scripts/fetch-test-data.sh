@@ -7,18 +7,16 @@ SCALE_FACTOR="0.1"
 SERIALIZER="csv_composite-longdateformatter"
 UPDATE_PARTITIONS="1"
 
-# Script directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(dirname "$SCRIPT_DIR")"
 TEST_DATA_DIR="${REPO_ROOT}/test-data/runtime"
 TEMP_DIR="${TEST_DATA_DIR}/tmp"
 
-# Colors for output (optional, but nice)
+# Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 NC='\033[0m' # No Color
 
-# Function to print usage
 print_usage() {
     cat <<EOF
 Usage: $0 [OPTIONS]
@@ -39,11 +37,15 @@ EXAMPLES:
 EOF
 }
 
-# Function to print error and exit
 error_exit() {
     echo -e "${RED}Error: $1${NC}" >&2
     print_usage
     exit 1
+}
+
+extract_archive() {
+    local archive="$1"
+    ( cd "${TEMP_DIR}" && tar -xvf "${archive}" )
 }
 
 # Parse command line arguments
@@ -106,9 +108,7 @@ DOWNLOAD_URL="https://repository.surfsara.nl/datasets/cwi/snb/files/${SERIALIZER
 # Move archive to temp directory and unpack
 mv "${ARCHIVE_NAME}" "${TEMP_DIR}/"
 echo "Unpacking main dataset..."
-cd "${TEMP_DIR}"
-tar -xvf "${ARCHIVE_NAME}"
-cd - > /dev/null
+extract_archive "${ARCHIVE_NAME}"
 
 # Move unpacked data to target directory
 # The tar archive extracts to a directory named after the archive (without .tar.zst)
@@ -136,9 +136,7 @@ SUBST_DOWNLOAD_URL="https://repository.surfsara.nl/datasets/cwi/snb/files/substi
 # Move and unpack substitution parameters
 mv "${SUBST_ARCHIVE_NAME}" "${TEMP_DIR}/"
 echo "Unpacking substitution parameters..."
-cd "${TEMP_DIR}"
-tar -xvf "${SUBST_ARCHIVE_NAME}"
-cd - > /dev/null
+extract_archive "${SUBST_ARCHIVE_NAME}"
 
 # Move substitution parameters to target directory
 SUBST_TARGET_DIR="${TARGET_DIR}/substitution_parameters"
@@ -158,9 +156,7 @@ UPDATE_STREAMS_DOWNLOAD_URL="https://repository.surfsara.nl/datasets/cwi/ldbc-sn
 # Move and unpack update streams
 mv "${UPDATE_STREAMS_ARCHIVE_NAME}" "${TEMP_DIR}/"
 echo "Unpacking update streams..."
-cd "${TEMP_DIR}"
-tar -xvf "${UPDATE_STREAMS_ARCHIVE_NAME}"
-cd - > /dev/null
+extract_archive "${UPDATE_STREAMS_ARCHIVE_NAME}"
 
 # Move update streams to target directory
 UPDATE_STREAMS_TARGET_DIR="${TARGET_DIR}/update_streams"
