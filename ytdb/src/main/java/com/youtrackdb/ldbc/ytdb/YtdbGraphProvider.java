@@ -4,7 +4,6 @@ import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.jetbrains.youtrackdb.api.YouTrackDB;
 import com.jetbrains.youtrackdb.api.YourTracks;
-import com.jetbrains.youtrackdb.api.gremlin.YTDBGraph;
 import com.jetbrains.youtrackdb.api.gremlin.YTDBGraphTraversalSource;
 import com.youtrackdb.ldbc.common.GraphProvider;
 import org.apache.commons.lang3.function.FailableConsumer;
@@ -17,7 +16,6 @@ import java.util.Map;
 public class YtdbGraphProvider implements GraphProvider {
 
     private final YouTrackDB db;
-    private final YTDBGraph graph;
     private final YTDBGraphTraversalSource traversal;
 
     @Inject
@@ -28,18 +26,17 @@ public class YtdbGraphProvider implements GraphProvider {
         String password = properties.get("ytdb.password");
 
         this.db = YourTracks.instance(dataDir);
-        this.graph = db.openGraph(databaseName, username, password);
-        this.traversal = graph.traversal();
+        this.traversal = db.openTraversal(databaseName, username, password);
     }
 
     @Override
     public <E extends Exception> void executeInTx(FailableConsumer<GraphTraversalSource, E> code) throws E {
-        graph.executeInTx(code::accept);
+        traversal.executeInTx(code::accept);
     }
 
     @Override
     public <E extends Exception, R> R computeInTx(FailableFunction<GraphTraversalSource, R, E> code) throws E {
-        return graph.computeInTx(code::apply);
+        return traversal.computeInTx(code::apply);
     }
 
     @Override
@@ -47,9 +44,6 @@ public class YtdbGraphProvider implements GraphProvider {
         try {
             if (traversal != null) {
                 traversal.close();
-            }
-            if (graph != null) {
-                graph.close();
             }
             if (db != null) {
                 db.close();

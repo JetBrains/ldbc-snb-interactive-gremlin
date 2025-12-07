@@ -1,6 +1,6 @@
 package com.youtrackdb.ldbc.ytdb.loader;
 
-import com.jetbrains.youtrackdb.api.gremlin.YTDBGraph;
+import com.jetbrains.youtrackdb.api.gremlin.YTDBGraphTraversalSource;
 import com.youtrackdb.ldbc.common.LdbcSchema;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -20,12 +20,12 @@ public class YtdbLoader {
 
     private static final int BATCH_SIZE = 5000;
 
-    private final YTDBGraph graph;
+    private final YTDBGraphTraversalSource traversal;
 
     private final Map<String, Map<Long, Object>> vertexIdCache;
 
-    public YtdbLoader(YTDBGraph graph) {
-        this.graph = graph;
+    public YtdbLoader(YTDBGraphTraversalSource traversal) {
+        this.traversal = traversal;
         this.vertexIdCache = new HashMap<>();
 
         // Initialize caches for all entity types
@@ -85,7 +85,7 @@ public class YtdbLoader {
     public Map<String, Long> counts() {
         var counts = new HashMap<String, Long>();
         try {
-            var g = graph.traversal();
+            var g = traversal;
 
             List<String> vertexLabels = List.of(
                     LdbcSchema.PERSON,
@@ -155,7 +155,7 @@ public class YtdbLoader {
     }
 
     private void insertPlace(List<Place> batch, Map<Long, Object> cache) {
-        graph.executeInTx(g -> {
+        traversal.executeInTx(g -> {
             for (Place place : batch) {
                 Vertex v = g.addV(LdbcSchema.PLACE)
                     .property(LdbcSchema.ID, place.id())
@@ -169,7 +169,7 @@ public class YtdbLoader {
     }
 
     private void insertOrganisation(List<Organisation> batch, Map<Long, Object> cache) {
-        graph.executeInTx(g -> {
+        traversal.executeInTx(g -> {
             for (Organisation org : batch) {
                 Vertex v = g.addV(LdbcSchema.ORGANISATION)
                     .property(LdbcSchema.ID, org.id())
@@ -183,7 +183,7 @@ public class YtdbLoader {
     }
 
     private void insertTagClass(List<TagClass> batch, Map<Long, Object> cache) {
-        graph.executeInTx(g -> {
+        traversal.executeInTx(g -> {
             for (TagClass tagClass : batch) {
                 Vertex v = g.addV(LdbcSchema.TAG_CLASS)
                     .property(LdbcSchema.ID, tagClass.id())
@@ -196,7 +196,7 @@ public class YtdbLoader {
     }
 
     private void insertTag(List<Tag> batch, Map<Long, Object> cache) {
-        graph.executeInTx(g -> {
+        traversal.executeInTx(g -> {
             for (Tag tag : batch) {
                 Vertex v = g.addV(LdbcSchema.TAG)
                     .property(LdbcSchema.ID, tag.id())
@@ -209,7 +209,7 @@ public class YtdbLoader {
     }
 
     private void insertPerson(List<Person> batch, Map<Long, Object> cache) {
-        graph.executeInTx(g -> {
+        traversal.executeInTx(g -> {
             for (Person person : batch) {
                 Vertex v = g.addV(LdbcSchema.PERSON)
                     .property(LdbcSchema.ID, person.id())
@@ -229,7 +229,7 @@ public class YtdbLoader {
     }
 
     private void insertForum(List<Forum> batch, Map<Long, Object> cache) {
-        graph.executeInTx(g -> {
+        traversal.executeInTx(g -> {
             for (Forum forum : batch) {
                 Vertex v = g.addV(LdbcSchema.FORUM)
                     .property(LdbcSchema.ID, forum.id())
@@ -242,7 +242,7 @@ public class YtdbLoader {
     }
 
     private void insertPost(List<Post> batch, Map<Long, Object> cache) {
-        graph.executeInTx(g -> {
+        traversal.executeInTx(g -> {
             for (Post post : batch) {
                 var traversal = g.addV(LdbcSchema.POST)
                     .property(LdbcSchema.ID, post.id())
@@ -266,7 +266,7 @@ public class YtdbLoader {
     }
 
     private void insertComment(List<Comment> batch, Map<Long, Object> cache) {
-        graph.executeInTx(g -> {
+        traversal.executeInTx(g -> {
             for (Comment comment : batch) {
                 Vertex v = g.addV(LdbcSchema.COMMENT)
                     .property(LdbcSchema.ID, comment.id())
@@ -338,7 +338,7 @@ public class YtdbLoader {
 
     private void insertSimpleEdges(List<SimpleEdge> batch, String edgeLabel,
                                    Map<Long, Object> fromCache, Map<Long, Object> toCache) {
-        graph.executeInTx(g -> {
+        traversal.executeInTx(g -> {
             var resolved = new HashMap<Object, Vertex>();
             for (SimpleEdge edge : batch) {
                 Vertex from = resolveVertex(g, fromCache, edge.fromId(), resolved);
@@ -367,7 +367,7 @@ public class YtdbLoader {
     }
 
     private void insertKnowsEdges(List<KnowsEdge> batch, Map<Long, Object> personCache) {
-        graph.executeInTx(g -> {
+        traversal.executeInTx(g -> {
             var resolved = new HashMap<Object, Vertex>();
             for (KnowsEdge edge : batch) {
                 Vertex p1 = resolveVertex(g, personCache, edge.person1Id(), resolved);
@@ -402,7 +402,7 @@ public class YtdbLoader {
     private void insertStudyAtEdges(List<StudyAtEdge> batch,
                                     Map<Long, Object> personCache,
                                     Map<Long, Object> orgCache) {
-        graph.executeInTx(g -> {
+        traversal.executeInTx(g -> {
             var resolved = new HashMap<Object, Vertex>();
             for (StudyAtEdge edge : batch) {
                 Vertex person = resolveVertex(g, personCache, edge.personId(), resolved);
@@ -435,7 +435,7 @@ public class YtdbLoader {
     private void insertWorkAtEdges(List<WorkAtEdge> batch,
                                    Map<Long, Object> personCache,
                                    Map<Long, Object> orgCache) {
-        graph.executeInTx(g -> {
+        traversal.executeInTx(g -> {
             var resolved = new HashMap<Object, Vertex>();
             for (WorkAtEdge edge : batch) {
                 Vertex person = resolveVertex(g, personCache, edge.personId(), resolved);
@@ -468,7 +468,7 @@ public class YtdbLoader {
     private void insertHasMemberEdges(List<HasMemberEdge> batch,
                                      Map<Long, Object> forumCache,
                                      Map<Long, Object> personCache) {
-        graph.executeInTx(g -> {
+        traversal.executeInTx(g -> {
             var resolved = new HashMap<Object, Vertex>();
             for (HasMemberEdge edge : batch) {
                 Vertex forum = resolveVertex(g, forumCache, edge.forumId(), resolved);
@@ -506,7 +506,7 @@ public class YtdbLoader {
     private void insertLikesEdges(List<LikesEdge> batch,
                                   Map<Long, Object> personCache,
                                   Map<Long, Object> contentCache) {
-        graph.executeInTx(g -> {
+        traversal.executeInTx(g -> {
             var resolved = new HashMap<Object, Vertex>();
             for (LikesEdge edge : batch) {
                 Vertex person = resolveVertex(g, personCache, edge.personId(), resolved);
