@@ -5,18 +5,15 @@
 
 A Gremlin-based implementation of the [LDBC Social Network Benchmark (SNB) Interactive v1](https://ldbcouncil.org/benchmarks/snb-interactive/) workload for TinkerPop-compatible graph databases.
 
-This project is created and maintained by the [YouTrackDB](https://github.com/JetBrains/youtrackdb) team at JetBrains.
+Created and maintained by the [YouTrackDB](https://github.com/JetBrains/youtrackdb) team at JetBrains.
 
-## Overview
+## What This Is
 
-This project provides:
-- **29 Gremlin traversals** implementing all LDBC SNB Interactive queries (14 complex reads, 7 short reads, 8 updates)
-- **Pluggable architecture** - add your TinkerPop-compatible database with minimal code
-- **LDBC Driver integration** for validation and benchmarking
+- 29 Gremlin traversals implementing all LDBC SNB Interactive queries (14 complex reads, 7 short reads, 8 updates)
+- Pluggable architecture for TinkerPop-compatible databases
+- LDBC Driver integration for validation and benchmarking
 
-## Project Status
-
-**Public Preview** - We're sharing this implementation to gather feedback from the TinkerPop community on the Gremlin query patterns and overall approach. Contributions and suggestions welcome!
+**Status:** Public Preview - gathering feedback on Gremlin query patterns and approach.
 
 ## Requirements
 
@@ -27,76 +24,106 @@ This project provides:
 ## Project Structure
 
 ```
-├── common/     # Shared Gremlin queries and schema (database-agnostic)
-├── runner/     # LDBC driver integration
-└── ytdb/       # YouTrackDB implementation (reference example)
+common/     # Database-agnostic Gremlin queries and schema
+runner/     # LDBC driver integration
+ytdb/       # YouTrackDB reference implementation
 ```
 
-## Quick Start
+## Getting Started
 
 ### 1. Build
+
 ```bash
-mvn clean package -DskipTests
+./mvnw clean package
 ```
 
-### 2. Load Data
-Download an LDBC SNB dataset from [ldbcouncil.org](https://ldbcouncil.org/data-sets-surf-repository/) and configure your loader (vendor-specific).
+### 2. Download Dataset
 
-### 3. Run Validation
-Vendor-specific, YTDB example:
 ```bash
-cd ytdb/driver
-./validate.sh
+./scripts/fetch-test-data.sh
 ```
 
-### 4. Run Benchmark
-Vendor-specific, YTDB example:
-```bash
-cd ytdb/driver
-./benchmark.sh
+Downloads SF 0.1 dataset (initial snapshot, substitution parameters, update streams) in CSV format.
+
+See [docs/dataset-overview.md](docs/dataset-overview.md) for details on dataset types and sources.
+
+### 3. Load Data
+
+Load the initial snapshot into your database. This is vendor-specific.
+
+Reference: `ytdb/src/main/java/com/youtrackdb/ldbc/ytdb/loader/`
+
+Dataset location: `test-data/runtime/social-network/sf0.1/`
+
+### 4. Configure
+
+Set your database vendor in `runner/ldbc-driver.properties`:
+
+```properties
+tinkerpop.vendor=ytdb
 ```
 
-## Adding a New Database
+Default configuration:
+- Validation mode
+- SF 0.1
+- 200 validation queries
+- Single thread
 
-1. Create a new module (e.g., `your_db/`)
+See [docs/configuration-and-running.md](docs/configuration-and-running.md) for configuration details.
+
+### 5. Run Validation
+
+```bash
+./scripts/ldbc-driver.sh
+```
+
+Results written to `runner/results/`.
+
+**Note:** Reload data after each run (updates modify the dataset).
+
+## Adding a Database Vendor
+
+To add support for your TinkerPop-compatible database:
+
+1. Create a vendor module (e.g., `yourdb/`)
 2. Implement `GraphProvider` interface
-3. Create a Guice module binding your provider
-4. Optionally override queries in `DefaultQueryModule` for database-specific optimizations
+3. Create a Guice module binding your implementation
+4. Register vendor in `TinkerPopDb.java`
+5. Add vendor properties in `yourdb/ldbc-driver.properties`
 
-See `ytdb/` module for a complete example.
+Optionally override default queries for vendor-specific optimizations.
 
-## Configuration
+Complete guide: [docs/adding-a-vendor.md](docs/adding-a-vendor.md)
 
-Key properties in `driver/*.properties`:
+Reference implementation: `ytdb/` module
 
-| Property | Description |
-|----------|-------------|
-| `tinkerpop.vendor` | Database identifier (e.g., `ytdb`) |
-| `ldbc.snb.interactive.scale_factor` | Dataset size: 0.1, 0.3, 1, 3, 10, 30, 100 |
-| `thread_count` | Concurrent benchmark threads |
-| `operation_count` | Number of operations to execute |
+## Documentation
 
-## Community & Support
+- [Dataset Overview](docs/dataset-overview.md) - Data types, sources, and structure
+- [Adding a Vendor](docs/adding-a-vendor.md) - Step-by-step database integration
+- [Configuration and Running](docs/configuration-and-running.md) - Configuration parameters and execution modes
 
-Have questions or feedback? Join us on [Zulip](https://youtrackdb.zulipchat.com/) - we're happy to help!
+## Community
 
-To report issues or suggest features, please use our [YouTrack](https://youtrack.jetbrains.com/issues/YTDB).
+- Questions/feedback: [Zulip](https://youtrackdb.zulipchat.com/)
+- Issues/features: [YouTrack](https://youtrack.jetbrains.com/issues/YTDB)
 
-This is an early release focused on query correctness and Gremlin patterns. We welcome feedback on:
+Feedback welcome on:
 - Query implementations and optimizations
 - API design for database plugins
-- Missing features or documentation
+- Documentation gaps
+
+## Related Projects
+
+- [LDBC SNB Interactive Reference Implementations](https://github.com/ldbc/ldbc_snb_interactive_v1_impls)
+- [LDBC SNB Interactive Driver](https://github.com/ldbc/ldbc_snb_interactive_v1_driver)
+- [LDBC SNB Data Generator](https://github.com/ldbc/ldbc_snb_datagen_hadoop)
 
 ## License
 
 Apache License 2.0 - see [LICENSE](LICENSE)
 
-## Related Projects
-
-- [LDBC SNB Interactive Reference Implementations](https://github.com/ldbc/ldbc_snb_interactive_v1_impls) - Official implementations for Neo4j, PostgreSQL, and other databases
-- [LDBC SNB Interactive Driver](https://github.com/ldbc/ldbc_snb_interactive_v1_driver) - The benchmark driver used by this project
-
 ## Acknowledgments
 
-- [LDBC Council](https://ldbcouncil.org/) for the SNB benchmark specification and reference implementations
+- [LDBC Council](https://ldbcouncil.org/) for the SNB benchmark specification
 - [Apache TinkerPop](https://tinkerpop.apache.org/) for the graph computing framework

@@ -42,5 +42,8 @@ logs/
 
 # Benchmark results
 results/
-*.csv
 *.json
+
+# Test data (downloaded SNB datasets)
+test-data/runtime/
+*.tar.zst
