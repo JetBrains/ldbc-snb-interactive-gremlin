@@ -21,12 +21,12 @@ public class YtdbGraphProvider implements GraphProvider {
     @Inject
     public YtdbGraphProvider(@Named("properties") Map<String, String> properties) {
         String dataDir = properties.get("ytdb.data.dir");
-        String databaseName = properties.get("ytdb.database.name");
+        String database = properties.get("ytdb.database");
         String username = properties.get("ytdb.username");
         String password = properties.get("ytdb.password");
 
         this.db = YourTracks.instance(dataDir);
-        this.traversal = db.openTraversal(databaseName, username, password);
+        this.traversal = db.openTraversal(database, username, password);
     }
 
     @Override
