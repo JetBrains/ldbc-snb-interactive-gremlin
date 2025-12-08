@@ -17,87 +17,60 @@ public class Main {
             props.load(in);
         }
 
+        String mode = System.getenv().getOrDefault("YTDB_MODE", props.getProperty("ytdb.mode", "embedded"));
         String dbPath = System.getenv().getOrDefault("YTDB_DATA_DIR", props.getProperty("ytdb.data.dir"));
+        String serverHost = System.getenv().getOrDefault("YTDB_SERVER_HOST", props.getProperty("ytdb.server.host", "localhost"));
+        int serverPort = Integer.parseInt(System.getenv().getOrDefault("YTDB_SERVER_PORT", props.getProperty("ytdb.server.port", "8182")));
+        String serverUser = System.getenv().getOrDefault("YTDB_SERVER_USER", props.getProperty("ytdb.server.user", "root"));
+        String serverPassword = System.getenv().getOrDefault("YTDB_SERVER_PASSWORD", props.getProperty("ytdb.server.password", "root"));
         String dbName = System.getenv().getOrDefault("YTDB_DATABASE_NAME", props.getProperty("ytdb.database.name"));
-        String username = System.getenv().getOrDefault("YTDB_USERNAME", props.getProperty("ytdb.username"));
-        String password = System.getenv().getOrDefault("YTDB_PASSWORD", props.getProperty("ytdb.password"));
-        String datasetStr = System.getenv().getOrDefault("YTDB_TEST_DATA_DIR", props.getProperty("ytdb.dataset.path"));
+        String databaseUser = System.getenv().getOrDefault("YTDB_DATABASE_USER", props.getProperty("ytdb.database.user"));
+        String databasePassword = System.getenv().getOrDefault("YTDB_DATABASE_PASSWORD", props.getProperty("ytdb.database.password"));
+        Path datasetPath = Paths.get(System.getenv().getOrDefault("YTDB_TEST_DATA_DIR", props.getProperty("ytdb.dataset.path")));
 
-        Path datasetPath = Paths.get(datasetStr);
-
-        System.out.println("=== LDBC SNB Data Loader for YouTrackDB ===");
-        System.out.println("Dataset: " + datasetPath);
-        System.out.println("Database: " + dbPath + "/" + dbName);
-        System.out.println();
+        System.out.println("LDBC SNB Loader | Mode: " + mode + " | Dataset: " + datasetPath);
 
         YouTrackDB db = null;
         YTDBGraphTraversalSource traversal = null;
 
         try {
-            System.out.println("Connecting to YouTrackDB...");
-            db = YourTracks.instance(dbPath);
+            db = "remote".equalsIgnoreCase(mode)
+                    ? YourTracks.instance(serverHost, serverPort, serverUser, serverPassword)
+                    : YourTracks.instance(dbPath);
 
             if (db.exists(dbName)) {
-                System.out.println("Dropping existing database: " + dbName);
                 db.drop(dbName);
             }
 
-            System.out.println("Creating database: " + dbName);
-            db.create(dbName, DatabaseType.DISK, username, password, "admin");
+            db.create(dbName, DatabaseType.DISK, databaseUser, databasePassword, "admin");
+            traversal = db.openTraversal(dbName, databaseUser, databasePassword);
 
-            traversal = db.openTraversal(dbName, username, password);
-            System.out.println("Connected successfully");
-            System.out.println();
+            new SchemaCreator(traversal).createSchema();
 
-            System.out.println("=== Creating Schema ===");
-            SchemaCreator schemaCreator = new SchemaCreator(traversal);
-            schemaCreator.createSchema();
-            System.out.println("Schema created successfully");
-            System.out.println();
-
-            YtdbLoader loader = new YtdbLoader(traversal);
-            System.out.println("=== Starting Data Load ===");
             long startTime = System.currentTimeMillis();
-
+            YtdbLoader loader = new YtdbLoader(traversal);
             loader.loadAll(datasetPath);
 
             long duration = System.currentTimeMillis() - startTime;
-            System.out.println();
-            System.out.println("=== Data Loading Complete ===");
-            System.out.println("Total time: " + duration + "ms (" + (duration / 1000.0) + "s)");
-            System.out.println();
+            System.out.println("\nCompleted in " + duration + "ms (" + (duration / 1000.0) + "s)\n");
 
-            System.out.println("=== Entity Counts ===");
             Map<String, Long> counts = loader.counts();
             counts.entrySet().stream()
-                .sorted(Map.Entry.comparingByKey())
-                .forEach(entry -> System.out.printf("  %-20s: %,d%n", entry.getKey(), entry.getValue()));
+                    .sorted(Map.Entry.comparingByKey())
+                    .forEach(entry -> System.out.printf("  %-20s: %,d%n", entry.getKey(), entry.getValue()));
 
         } catch (Exception e) {
-            System.err.println("Error loading data: " + e.getMessage());
+            System.err.println("Error: " + e.getMessage());
             e.printStackTrace();
             System.exit(1);
         } finally {
-            System.out.println();
-            try {
-                if (traversal != null) {
-                    System.out.println("Closing traversal...");
-                    traversal.close();
-                }
-            } catch (Exception e) {
-                System.err.println("Error closing traversal: " + e.getMessage());
+            if (traversal != null) {
+                traversal.close();
             }
 
-            try {
-                if (db != null) {
-                    System.out.println("Closing database instance...");
-                    db.close();
-                }
-            } catch (Exception e) {
-                System.err.println("Error closing database: " + e.getMessage());
+            if (db != null) {
+                db.close();
             }
-
-            System.out.println("All resources closed");
         }
     }
 }

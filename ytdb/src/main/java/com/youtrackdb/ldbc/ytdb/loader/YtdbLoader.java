@@ -2,41 +2,26 @@ package com.youtrackdb.ldbc.ytdb.loader;
 
 import com.jetbrains.youtrackdb.api.gremlin.YTDBGraphTraversalSource;
 import com.youtrackdb.ldbc.common.LdbcSchema;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.function.BiConsumer;
 
 import static com.youtrackdb.ldbc.ytdb.loader.EntityRecords.*;
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.V;
 
 public class YtdbLoader {
 
     private static final Logger log = LoggerFactory.getLogger(YtdbLoader.class);
 
-    private static final int BATCH_SIZE = 5000;
+    private static final int BATCH_SIZE = 50000;
 
     private final YTDBGraphTraversalSource traversal;
 
-    private final Map<String, Map<Long, Object>> vertexIdCache;
-
     public YtdbLoader(YTDBGraphTraversalSource traversal) {
         this.traversal = traversal;
-        this.vertexIdCache = new HashMap<>();
-
-        // Initialize caches for all entity types
-        vertexIdCache.put(LdbcSchema.PERSON, new HashMap<>());
-        vertexIdCache.put(LdbcSchema.PLACE, new HashMap<>());
-        vertexIdCache.put(LdbcSchema.ORGANISATION, new HashMap<>());
-        vertexIdCache.put(LdbcSchema.TAG_CLASS, new HashMap<>());
-        vertexIdCache.put(LdbcSchema.TAG, new HashMap<>());
-        vertexIdCache.put(LdbcSchema.FORUM, new HashMap<>());
-        vertexIdCache.put(LdbcSchema.POST, new HashMap<>());
-        vertexIdCache.put(LdbcSchema.COMMENT, new HashMap<>());
     }
 
     public void loadAll(Path datasetRoot) throws Exception {
@@ -78,15 +63,11 @@ public class YtdbLoader {
 
         long duration = System.currentTimeMillis() - startTime;
         log.info("Data loading completed in {}ms ({} seconds)", duration, duration / 1000.0);
-
-        clearCaches();
     }
 
     public Map<String, Long> counts() {
         var counts = new HashMap<String, Long>();
         try {
-            var g = traversal;
-
             List<String> vertexLabels = List.of(
                     LdbcSchema.PERSON,
                     LdbcSchema.PLACE,
@@ -99,7 +80,7 @@ public class YtdbLoader {
             );
 
             for (String label : vertexLabels) {
-                counts.put(label, g.V().hasLabel(label).count().next());
+                counts.put(label, traversal.V().hasLabel(label).count().next());
             }
 
             List<String> edgeLabels = List.of(
@@ -120,7 +101,7 @@ public class YtdbLoader {
             );
 
             for (String edgeLabel : edgeLabels) {
-                counts.put(edgeLabel, g.E().hasLabel(edgeLabel).count().next());
+                counts.put(edgeLabel, traversal.E().hasLabel(edgeLabel).count().next());
             }
         } catch (Exception e) {
             log.error("Error computing counts", e);
@@ -131,8 +112,8 @@ public class YtdbLoader {
     // ==================== ENTITY LOADERS ====================
 
     private <T> void loadEntities(Path dir, String filename, String entityLabel,
-                                   java.util.function.Function<String[], T> parser,
-                                   BiConsumer<List<T>, Map<Long, Object>> inserter) {
+                                  java.util.function.Function<String[], T> parser,
+                                  java.util.function.Consumer<List<T>> inserter) {
         try {
             Path csvFile = dir.resolve(filename);
             if (!Files.exists(csvFile)) {
@@ -140,11 +121,10 @@ public class YtdbLoader {
                 return;
             }
 
-            var cache = vertexIdCache.get(entityLabel);
             var processor = new CsvProcessor<T>(BATCH_SIZE);
             long count = processor.process(csvFile,
-                parser::apply,
-                batch -> inserter.accept(batch, cache)
+                    parser::apply,
+                    inserter::accept
             );
 
             log.info("Loaded {} {} entities", count, entityLabel);
@@ -154,103 +134,97 @@ public class YtdbLoader {
         }
     }
 
-    private void insertPlace(List<Place> batch, Map<Long, Object> cache) {
+    private void insertPlace(List<Place> batch) {
         traversal.executeInTx(g -> {
             for (Place place : batch) {
-                Vertex v = g.addV(LdbcSchema.PLACE)
-                    .property(LdbcSchema.ID, place.id())
-                    .property(LdbcSchema.NAME, place.name())
-                    .property(LdbcSchema.URL, place.url())
-                    .property(LdbcSchema.TYPE, place.type())
-                    .next();
-                cache.put(place.id(), v.id());
+                g.addV(LdbcSchema.PLACE)
+                        .property(LdbcSchema.ID, place.id())
+                        .property(LdbcSchema.NAME, place.name())
+                        .property(LdbcSchema.URL, place.url())
+                        .property(LdbcSchema.TYPE, place.type())
+                        .iterate();
             }
         });
     }
 
-    private void insertOrganisation(List<Organisation> batch, Map<Long, Object> cache) {
+    private void insertOrganisation(List<Organisation> batch) {
         traversal.executeInTx(g -> {
             for (Organisation org : batch) {
-                Vertex v = g.addV(LdbcSchema.ORGANISATION)
-                    .property(LdbcSchema.ID, org.id())
-                    .property(LdbcSchema.TYPE, org.type())
-                    .property(LdbcSchema.NAME, org.name())
-                    .property(LdbcSchema.URL, org.url())
-                    .next();
-                cache.put(org.id(), v.id());
+                g.addV(LdbcSchema.ORGANISATION)
+                        .property(LdbcSchema.ID, org.id())
+                        .property(LdbcSchema.TYPE, org.type())
+                        .property(LdbcSchema.NAME, org.name())
+                        .property(LdbcSchema.URL, org.url())
+                        .iterate();
             }
         });
     }
 
-    private void insertTagClass(List<TagClass> batch, Map<Long, Object> cache) {
+    private void insertTagClass(List<TagClass> batch) {
         traversal.executeInTx(g -> {
             for (TagClass tagClass : batch) {
-                Vertex v = g.addV(LdbcSchema.TAG_CLASS)
-                    .property(LdbcSchema.ID, tagClass.id())
-                    .property(LdbcSchema.NAME, tagClass.name())
-                    .property(LdbcSchema.URL, tagClass.url())
-                    .next();
-                cache.put(tagClass.id(), v.id());
+                g.addV(LdbcSchema.TAG_CLASS)
+                        .property(LdbcSchema.ID, tagClass.id())
+                        .property(LdbcSchema.NAME, tagClass.name())
+                        .property(LdbcSchema.URL, tagClass.url())
+                        .iterate();
             }
         });
     }
 
-    private void insertTag(List<Tag> batch, Map<Long, Object> cache) {
+    private void insertTag(List<Tag> batch) {
         traversal.executeInTx(g -> {
             for (Tag tag : batch) {
-                Vertex v = g.addV(LdbcSchema.TAG)
-                    .property(LdbcSchema.ID, tag.id())
-                    .property(LdbcSchema.NAME, tag.name())
-                    .property(LdbcSchema.URL, tag.url())
-                    .next();
-                cache.put(tag.id(), v.id());
+                g.addV(LdbcSchema.TAG)
+                        .property(LdbcSchema.ID, tag.id())
+                        .property(LdbcSchema.NAME, tag.name())
+                        .property(LdbcSchema.URL, tag.url())
+                        .iterate();
             }
         });
     }
 
-    private void insertPerson(List<Person> batch, Map<Long, Object> cache) {
+    private void insertPerson(List<Person> batch) {
         traversal.executeInTx(g -> {
             for (Person person : batch) {
-                Vertex v = g.addV(LdbcSchema.PERSON)
-                    .property(LdbcSchema.ID, person.id())
-                    .property(LdbcSchema.FIRST_NAME, person.firstName())
-                    .property(LdbcSchema.LAST_NAME, person.lastName())
-                    .property(LdbcSchema.GENDER, person.gender())
-                    .property(LdbcSchema.BIRTHDAY, person.birthday())
-                    .property(LdbcSchema.CREATION_DATE, person.creationDate())
-                    .property(LdbcSchema.LOCATION_IP, person.locationIP())
-                    .property(LdbcSchema.BROWSER_USED, person.browserUsed())
-                    .property(LdbcSchema.LANGUAGES, person.languages())
-                    .property(LdbcSchema.EMAILS, person.emails())
-                    .next();
-                cache.put(person.id(), v.id());
+                g.addV(LdbcSchema.PERSON)
+                        .property(LdbcSchema.ID, person.id())
+                        .property(LdbcSchema.FIRST_NAME, person.firstName())
+                        .property(LdbcSchema.LAST_NAME, person.lastName())
+                        .property(LdbcSchema.GENDER, person.gender())
+                        .property(LdbcSchema.BIRTHDAY, person.birthday())
+                        .property(LdbcSchema.CREATION_DATE, person.creationDate())
+                        .property(LdbcSchema.LOCATION_IP, person.locationIP())
+                        .property(LdbcSchema.BROWSER_USED, person.browserUsed())
+                        .property(LdbcSchema.LANGUAGES, person.languages())
+                        .property(LdbcSchema.EMAILS, person.emails())
+                        .iterate();
             }
         });
     }
 
-    private void insertForum(List<Forum> batch, Map<Long, Object> cache) {
+    private void insertForum(List<Forum> batch) {
         traversal.executeInTx(g -> {
             for (Forum forum : batch) {
-                Vertex v = g.addV(LdbcSchema.FORUM)
-                    .property(LdbcSchema.ID, forum.id())
-                    .property(LdbcSchema.TITLE, forum.title())
-                    .property(LdbcSchema.CREATION_DATE, forum.creationDate())
-                    .next();
-                cache.put(forum.id(), v.id());
+                g.addV(LdbcSchema.FORUM)
+                        .property(LdbcSchema.ID, forum.id())
+                        .property(LdbcSchema.TITLE, forum.title())
+                        .property(LdbcSchema.CREATION_DATE, forum.creationDate())
+                        .iterate();
             }
         });
     }
 
-    private void insertPost(List<Post> batch, Map<Long, Object> cache) {
+    private void insertPost(List<Post> batch) {
         traversal.executeInTx(g -> {
             for (Post post : batch) {
                 var traversal = g.addV(LdbcSchema.POST)
-                    .property(LdbcSchema.ID, post.id())
-                    .property(LdbcSchema.CREATION_DATE, post.creationDate())
-                    .property(LdbcSchema.LOCATION_IP, post.locationIP())
-                    .property(LdbcSchema.BROWSER_USED, post.browserUsed())
-                    .property(LdbcSchema.LANGUAGE, post.language())
-                    .property(LdbcSchema.LENGTH, post.length());
+                        .property(LdbcSchema.ID, post.id())
+                        .property(LdbcSchema.CREATION_DATE, post.creationDate())
+                        .property(LdbcSchema.LOCATION_IP, post.locationIP())
+                        .property(LdbcSchema.BROWSER_USED, post.browserUsed())
+                        .property(LdbcSchema.LANGUAGE, post.language())
+                        .property(LdbcSchema.LENGTH, post.length());
 
                 if (post.imageFile() != null) {
                     traversal.property(LdbcSchema.IMAGE_FILE, post.imageFile());
@@ -259,24 +233,22 @@ public class YtdbLoader {
                     traversal.property(LdbcSchema.CONTENT, post.content());
                 }
 
-                Vertex vertex = traversal.next();
-                cache.put(post.id(), vertex.id());
+                traversal.iterate();
             }
         });
     }
 
-    private void insertComment(List<Comment> batch, Map<Long, Object> cache) {
+    private void insertComment(List<Comment> batch) {
         traversal.executeInTx(g -> {
             for (Comment comment : batch) {
-                Vertex v = g.addV(LdbcSchema.COMMENT)
-                    .property(LdbcSchema.ID, comment.id())
-                    .property(LdbcSchema.CREATION_DATE, comment.creationDate())
-                    .property(LdbcSchema.LOCATION_IP, comment.locationIP())
-                    .property(LdbcSchema.BROWSER_USED, comment.browserUsed())
-                    .property(LdbcSchema.CONTENT, comment.content())
-                    .property(LdbcSchema.LENGTH, comment.length())
-                    .next();
-                cache.put(comment.id(), v.id());
+                g.addV(LdbcSchema.COMMENT)
+                        .property(LdbcSchema.ID, comment.id())
+                        .property(LdbcSchema.CREATION_DATE, comment.creationDate())
+                        .property(LdbcSchema.LOCATION_IP, comment.locationIP())
+                        .property(LdbcSchema.BROWSER_USED, comment.browserUsed())
+                        .property(LdbcSchema.CONTENT, comment.content())
+                        .property(LdbcSchema.LENGTH, comment.length())
+                        .iterate();
             }
         });
     }
@@ -320,13 +292,11 @@ public class YtdbLoader {
                 return;
             }
 
-            var fromCache = vertexIdCache.get(fromLabel);
-            var toCache = vertexIdCache.get(toLabel);
             var processor = new CsvProcessor<SimpleEdge>(BATCH_SIZE);
 
             long count = processor.process(csvFile,
-                SimpleEdge::parse,
-                batch -> insertSimpleEdges(batch, edgeLabel, fromCache, toCache)
+                    SimpleEdge::parse,
+                    batch -> insertSimpleEdges(batch, edgeLabel, fromLabel, toLabel)
             );
 
             log.info("Loaded {} {} edges", count, edgeLabel);
@@ -337,15 +307,13 @@ public class YtdbLoader {
     }
 
     private void insertSimpleEdges(List<SimpleEdge> batch, String edgeLabel,
-                                   Map<Long, Object> fromCache, Map<Long, Object> toCache) {
+                                   String fromLabel, String toLabel) {
         traversal.executeInTx(g -> {
-            var resolved = new HashMap<Object, Vertex>();
             for (SimpleEdge edge : batch) {
-                Vertex from = resolveVertex(g, fromCache, edge.fromId(), resolved);
-                Vertex to = resolveVertex(g, toCache, edge.toId(), resolved);
-                if (from != null && to != null) {
-                    from.addEdge(edgeLabel, to);
-                }
+                g.V().has(fromLabel, LdbcSchema.ID, edge.fromId())
+                        .addE(edgeLabel)
+                        .to(V().has(toLabel, LdbcSchema.ID, edge.toId()))
+                        .iterate();
             }
         });
     }
@@ -356,27 +324,27 @@ public class YtdbLoader {
             return;
         }
 
-        var personCache = vertexIdCache.get(LdbcSchema.PERSON);
         var processor = new CsvProcessor<KnowsEdge>(BATCH_SIZE);
         long count = processor.process(csvFile,
-            KnowsEdge::parse,
-            batch -> insertKnowsEdges(batch, personCache)
+                KnowsEdge::parse,
+                this::insertKnowsEdges
         );
 
         log.info("Loaded {} KNOWS edges", count);
     }
 
-    private void insertKnowsEdges(List<KnowsEdge> batch, Map<Long, Object> personCache) {
+    private void insertKnowsEdges(List<KnowsEdge> batch) {
         traversal.executeInTx(g -> {
-            var resolved = new HashMap<Object, Vertex>();
             for (KnowsEdge edge : batch) {
-                Vertex p1 = resolveVertex(g, personCache, edge.person1Id(), resolved);
-                Vertex p2 = resolveVertex(g, personCache, edge.person2Id(), resolved);
-                if (p1 != null && p2 != null) {
-                    // Bidirectional relationship
-                    p1.addEdge(LdbcSchema.KNOWS, p2, LdbcSchema.CREATION_DATE, edge.creationDate());
-                    p2.addEdge(LdbcSchema.KNOWS, p1, LdbcSchema.CREATION_DATE, edge.creationDate());
-                }
+                // Bidirectional relationship
+                g.V().has(LdbcSchema.PERSON, LdbcSchema.ID, edge.person1Id())
+                        .addE(LdbcSchema.KNOWS)
+                        .to(V().has(LdbcSchema.PERSON, LdbcSchema.ID, edge.person2Id()))
+                        .property(LdbcSchema.CREATION_DATE, edge.creationDate()).iterate();
+                g.V().has(LdbcSchema.PERSON, LdbcSchema.ID, edge.person2Id())
+                        .addE(LdbcSchema.KNOWS)
+                        .to(V().has(LdbcSchema.PERSON, LdbcSchema.ID, edge.person1Id()))
+                        .property(LdbcSchema.CREATION_DATE, edge.creationDate()).iterate();
             }
         });
     }
@@ -387,29 +355,23 @@ public class YtdbLoader {
             return;
         }
 
-        var personCache = vertexIdCache.get(LdbcSchema.PERSON);
-        var orgCache = vertexIdCache.get(LdbcSchema.ORGANISATION);
         var processor = new CsvProcessor<StudyAtEdge>(BATCH_SIZE);
 
         long count = processor.process(csvFile,
-            StudyAtEdge::parse,
-            batch -> insertStudyAtEdges(batch, personCache, orgCache)
+                StudyAtEdge::parse,
+                this::insertStudyAtEdges
         );
 
         log.info("Loaded {} STUDY_AT edges", count);
     }
 
-    private void insertStudyAtEdges(List<StudyAtEdge> batch,
-                                    Map<Long, Object> personCache,
-                                    Map<Long, Object> orgCache) {
+    private void insertStudyAtEdges(List<StudyAtEdge> batch) {
         traversal.executeInTx(g -> {
-            var resolved = new HashMap<Object, Vertex>();
             for (StudyAtEdge edge : batch) {
-                Vertex person = resolveVertex(g, personCache, edge.personId(), resolved);
-                Vertex org = resolveVertex(g, orgCache, edge.organisationId(), resolved);
-                if (person != null && org != null) {
-                    person.addEdge(LdbcSchema.STUDY_AT, org, LdbcSchema.CLASS_YEAR, edge.classYear());
-                }
+                g.V().has(LdbcSchema.PERSON, LdbcSchema.ID, edge.personId())
+                        .addE(LdbcSchema.STUDY_AT)
+                        .to(V().has(LdbcSchema.ORGANISATION, LdbcSchema.ID, edge.organisationId()))
+                        .property(LdbcSchema.CLASS_YEAR, edge.classYear()).iterate();
             }
         });
     }
@@ -420,29 +382,23 @@ public class YtdbLoader {
             return;
         }
 
-        var personCache = vertexIdCache.get(LdbcSchema.PERSON);
-        var orgCache = vertexIdCache.get(LdbcSchema.ORGANISATION);
         var processor = new CsvProcessor<WorkAtEdge>(BATCH_SIZE);
 
         long count = processor.process(csvFile,
-            WorkAtEdge::parse,
-            batch -> insertWorkAtEdges(batch, personCache, orgCache)
+                WorkAtEdge::parse,
+                this::insertWorkAtEdges
         );
 
         log.info("Loaded {} WORK_AT edges", count);
     }
 
-    private void insertWorkAtEdges(List<WorkAtEdge> batch,
-                                   Map<Long, Object> personCache,
-                                   Map<Long, Object> orgCache) {
+    private void insertWorkAtEdges(List<WorkAtEdge> batch) {
         traversal.executeInTx(g -> {
-            var resolved = new HashMap<Object, Vertex>();
             for (WorkAtEdge edge : batch) {
-                Vertex person = resolveVertex(g, personCache, edge.personId(), resolved);
-                Vertex org = resolveVertex(g, orgCache, edge.organisationId(), resolved);
-                if (person != null && org != null) {
-                    person.addEdge(LdbcSchema.WORK_AT, org, LdbcSchema.WORK_FROM, edge.workFrom());
-                }
+                g.V().has(LdbcSchema.PERSON, LdbcSchema.ID, edge.personId())
+                        .addE(LdbcSchema.WORK_AT)
+                        .to(V().has(LdbcSchema.ORGANISATION, LdbcSchema.ID, edge.organisationId()))
+                        .property(LdbcSchema.WORK_FROM, edge.workFrom()).iterate();
             }
         });
     }
@@ -453,29 +409,23 @@ public class YtdbLoader {
             return;
         }
 
-        var forumCache = vertexIdCache.get(LdbcSchema.FORUM);
-        var personCache = vertexIdCache.get(LdbcSchema.PERSON);
         var processor = new CsvProcessor<HasMemberEdge>(BATCH_SIZE);
 
         long count = processor.process(csvFile,
-            HasMemberEdge::parse,
-            batch -> insertHasMemberEdges(batch, forumCache, personCache)
+                HasMemberEdge::parse,
+                this::insertHasMemberEdges
         );
 
         log.info("Loaded {} HAS_MEMBER edges", count);
     }
 
-    private void insertHasMemberEdges(List<HasMemberEdge> batch,
-                                     Map<Long, Object> forumCache,
-                                     Map<Long, Object> personCache) {
+    private void insertHasMemberEdges(List<HasMemberEdge> batch) {
         traversal.executeInTx(g -> {
-            var resolved = new HashMap<Object, Vertex>();
             for (HasMemberEdge edge : batch) {
-                Vertex forum = resolveVertex(g, forumCache, edge.forumId(), resolved);
-                Vertex person = resolveVertex(g, personCache, edge.personId(), resolved);
-                if (forum != null && person != null) {
-                    forum.addEdge(LdbcSchema.HAS_MEMBER, person, LdbcSchema.JOIN_DATE, edge.joinDate());
-                }
+                g.V().has(LdbcSchema.FORUM, LdbcSchema.ID, edge.forumId())
+                        .addE(LdbcSchema.HAS_MEMBER)
+                        .to(V().has(LdbcSchema.PERSON, LdbcSchema.ID, edge.personId()))
+                        .property(LdbcSchema.JOIN_DATE, edge.joinDate()).iterate();
             }
         });
     }
@@ -487,13 +437,11 @@ public class YtdbLoader {
                 return;
             }
 
-            var personCache = vertexIdCache.get(LdbcSchema.PERSON);
-            var contentCache = vertexIdCache.get(contentLabel);
             var processor = new CsvProcessor<LikesEdge>(BATCH_SIZE);
 
             long count = processor.process(csvFile,
-                LikesEdge::parse,
-                batch -> insertLikesEdges(batch, personCache, contentCache)
+                    LikesEdge::parse,
+                    batch -> insertLikesEdges(batch, contentLabel)
             );
 
             log.info("Loaded {} LIKES {} edges", count, contentLabel);
@@ -503,17 +451,13 @@ public class YtdbLoader {
         }
     }
 
-    private void insertLikesEdges(List<LikesEdge> batch,
-                                  Map<Long, Object> personCache,
-                                  Map<Long, Object> contentCache) {
+    private void insertLikesEdges(List<LikesEdge> batch, String contentLabel) {
         traversal.executeInTx(g -> {
-            var resolved = new HashMap<Object, Vertex>();
             for (LikesEdge edge : batch) {
-                Vertex person = resolveVertex(g, personCache, edge.personId(), resolved);
-                Vertex content = resolveVertex(g, contentCache, edge.contentId(), resolved);
-                if (person != null && content != null) {
-                    person.addEdge(LdbcSchema.LIKES, content, LdbcSchema.CREATION_DATE, edge.creationDate());
-                }
+                g.V().has(LdbcSchema.PERSON, LdbcSchema.ID, edge.personId())
+                        .addE(LdbcSchema.LIKES)
+                        .to(V().has(contentLabel, LdbcSchema.ID, edge.contentId()))
+                        .property(LdbcSchema.CREATION_DATE, edge.creationDate()).iterate();
             }
         });
     }
@@ -523,35 +467,7 @@ public class YtdbLoader {
     private void validateDirectories(Path staticDir, Path dynamicDir) {
         if (!Files.exists(staticDir) || !Files.exists(dynamicDir)) {
             throw new IllegalArgumentException(
-                "Dataset directory must contain static/ and dynamic/ subdirectories");
+                    "Dataset directory must contain static/ and dynamic/ subdirectories");
         }
-    }
-
-    private void clearCaches() {
-        for (Map<Long, Object> cache : vertexIdCache.values()) {
-            cache.clear();
-        }
-        log.info("Cleared vertex caches");
-    }
-
-    private Vertex resolveVertex(GraphTraversalSource g,
-                                 Map<Long, Object> cache,
-                                 long entityId,
-                                 Map<Object, Vertex> localCache) {
-        Object internalId = cache.get(entityId);
-        if (internalId == null) {
-            return null;
-        }
-
-        Vertex existing = localCache.get(internalId);
-        if (existing != null) {
-            return existing;
-        }
-
-        Vertex vertex = g.V(internalId).tryNext().orElse(null);
-        if (vertex != null) {
-            localCache.put(internalId, vertex);
-        }
-        return vertex;
     }
 }

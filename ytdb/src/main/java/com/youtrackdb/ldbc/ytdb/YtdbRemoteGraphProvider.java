@@ -27,7 +27,7 @@ public class YtdbRemoteGraphProvider implements GraphProvider {
     public YtdbRemoteGraphProvider(@Named("properties") Map<String, String> properties) {
         String host = properties.get("ytdb.host");
         Integer port = Optional.ofNullable(properties.get("ytdb.port")).map(Integer::parseInt).orElse(8182);
-        String databaseName = properties.get("ytdb.database.name");
+        String database = properties.get("ytdb.database");
         String username = properties.get("ytdb.username");
         String password = properties.get("ytdb.password");
 
@@ -49,10 +49,9 @@ public class YtdbRemoteGraphProvider implements GraphProvider {
                 .channelizer(YTDBDriverWebSocketChannelizer.class)
                 .create();
 
-        final var traversalSourcePrefix = "ytdb";
         traversal = AnonymousTraversalSource
                 .traversal(YTDBGraphTraversalSource.class)
-                .with(DriverRemoteConnection.using(cluster, traversalSourcePrefix + databaseName));
+                .with(DriverRemoteConnection.using(cluster, database));
     }
 
     @Override
