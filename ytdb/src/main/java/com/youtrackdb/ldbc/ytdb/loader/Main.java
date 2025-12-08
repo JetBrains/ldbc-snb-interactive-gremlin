@@ -3,7 +3,7 @@ package com.youtrackdb.ldbc.ytdb.loader;
 import com.jetbrains.youtrackdb.api.DatabaseType;
 import com.jetbrains.youtrackdb.api.YouTrackDB;
 import com.jetbrains.youtrackdb.api.YourTracks;
-import com.jetbrains.youtrackdb.api.gremlin.YTDBGraph;
+import com.jetbrains.youtrackdb.api.gremlin.YTDBGraphTraversalSource;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -31,7 +31,7 @@ public class Main {
         System.out.println();
 
         YouTrackDB db = null;
-        YTDBGraph graph = null;
+        YTDBGraphTraversalSource traversal = null;
 
         try {
             System.out.println("Connecting to YouTrackDB...");
@@ -43,19 +43,19 @@ public class Main {
             }
 
             System.out.println("Creating database: " + dbName);
-            db.create(dbName, DatabaseType.DISK, username, password, username);
+            db.create(dbName, DatabaseType.DISK, username, password, "admin");
 
-            graph = db.openGraph(dbName, username, password);
+            traversal = db.openTraversal(dbName, username, password);
             System.out.println("Connected successfully");
             System.out.println();
 
             System.out.println("=== Creating Schema ===");
-            SchemaCreator schemaCreator = new SchemaCreator(graph);
+            SchemaCreator schemaCreator = new SchemaCreator(traversal);
             schemaCreator.createSchema();
             System.out.println("Schema created successfully");
             System.out.println();
 
-            YtdbLoader loader = new YtdbLoader(graph);
+            YtdbLoader loader = new YtdbLoader(traversal);
             System.out.println("=== Starting Data Load ===");
             long startTime = System.currentTimeMillis();
 
@@ -80,12 +80,12 @@ public class Main {
         } finally {
             System.out.println();
             try {
-                if (graph != null) {
-                    System.out.println("Closing graph...");
-                    graph.close();
+                if (traversal != null) {
+                    System.out.println("Closing traversal...");
+                    traversal.close();
                 }
             } catch (Exception e) {
-                System.err.println("Error closing graph: " + e.getMessage());
+                System.err.println("Error closing traversal: " + e.getMessage());
             }
 
             try {

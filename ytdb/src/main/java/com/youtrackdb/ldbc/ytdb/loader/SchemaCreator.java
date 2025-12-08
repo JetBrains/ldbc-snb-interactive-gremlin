@@ -1,6 +1,6 @@
 package com.youtrackdb.ldbc.ytdb.loader;
 
-import com.jetbrains.youtrackdb.api.gremlin.YTDBGraph;
+import com.jetbrains.youtrackdb.api.gremlin.YTDBGraphTraversalSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,10 +17,10 @@ public class SchemaCreator {
     private static final Logger log = LoggerFactory.getLogger(SchemaCreator.class);
     private static final String SCHEMA_FILE = "/ldbc-snb-schema.osql";
 
-    private final YTDBGraph graph;
+    private final YTDBGraphTraversalSource traversal;
 
-    public SchemaCreator(YTDBGraph graph) {
-        this.graph = graph;
+    public SchemaCreator(YTDBGraphTraversalSource traversal) {
+        this.traversal = traversal;
     }
 
     public void createSchema() {
@@ -32,7 +32,7 @@ public class SchemaCreator {
             log.info("Loaded {} SQL statements from schema file", statements.size());
 
             // Execute all statements in a single transaction
-            graph.executeInTx(g -> {
+            traversal.executeInTx(g -> {
                 for (String statement : statements) {
                     g.command(statement);
                 }
