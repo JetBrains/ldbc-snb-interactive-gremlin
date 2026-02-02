@@ -25,7 +25,8 @@ ENV YTDB_SERVER_PASSWORD=root
 ENV YTDB_DATABASE_NAME=ldbc_snb
 ENV YTDB_DATABASE_USER=admin
 ENV YTDB_DATABASE_PASSWORD=admin
-ENV YTDB_TEST_DATA_DIR=/data
+ENV YTDB_DATASET_PATH=/data
+# YTDB_BACKUP_PATH - optional, server-side path for backup/restore
 
 VOLUME /data
 

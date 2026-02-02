@@ -11,24 +11,34 @@ import java.util.Map;
 import java.util.Properties;
 
 public class Main {
+
     public static void main(String[] args) throws Exception {
         Properties props = new Properties();
         try (var in = Main.class.getResourceAsStream("/loader.properties")) {
             props.load(in);
         }
 
-        String mode = System.getenv().getOrDefault("YTDB_MODE", props.getProperty("ytdb.mode", "embedded"));
-        String dbPath = System.getenv().getOrDefault("YTDB_DATA_DIR", props.getProperty("ytdb.data.dir"));
-        String serverHost = System.getenv().getOrDefault("YTDB_SERVER_HOST", props.getProperty("ytdb.server.host", "localhost"));
-        int serverPort = Integer.parseInt(System.getenv().getOrDefault("YTDB_SERVER_PORT", props.getProperty("ytdb.server.port", "8182")));
-        String serverUser = System.getenv().getOrDefault("YTDB_SERVER_USER", props.getProperty("ytdb.server.user", "root"));
-        String serverPassword = System.getenv().getOrDefault("YTDB_SERVER_PASSWORD", props.getProperty("ytdb.server.password", "root"));
-        String dbName = System.getenv().getOrDefault("YTDB_DATABASE_NAME", props.getProperty("ytdb.database.name"));
-        String databaseUser = System.getenv().getOrDefault("YTDB_DATABASE_USER", props.getProperty("ytdb.database.user"));
-        String databasePassword = System.getenv().getOrDefault("YTDB_DATABASE_PASSWORD", props.getProperty("ytdb.database.password"));
-        Path datasetPath = Paths.get(System.getenv().getOrDefault("YTDB_TEST_DATA_DIR", props.getProperty("ytdb.dataset.path")));
+        // Connection configuration
+        String mode = getConfig("YTDB_MODE", props, "ytdb.mode", "embedded");
+        String dbPath = getConfig("YTDB_DATA_DIR", props, "ytdb.data.dir", null);
+        String serverHost = getConfig("YTDB_SERVER_HOST", props, "ytdb.server.host", "localhost");
+        int serverPort = Integer.parseInt(getConfig("YTDB_SERVER_PORT", props, "ytdb.server.port", "8182"));
+        String serverUser = getConfig("YTDB_SERVER_USER", props, "ytdb.server.user", "root");
+        String serverPassword = getConfig("YTDB_SERVER_PASSWORD", props, "ytdb.server.password", "root");
+        String dbName = getConfig("YTDB_DATABASE_NAME", props, "ytdb.database.name", null);
+        String databaseUser = getConfig("YTDB_DATABASE_USER", props, "ytdb.database.user", null);
+        String databasePassword = getConfig("YTDB_DATABASE_PASSWORD", props, "ytdb.database.password", null);
+        // Dataset path - where the LDBC CSV files are located (client-side)
+        Path datasetPath = Paths.get(getConfig("YTDB_DATASET_PATH", props, "ytdb.dataset.path", null));
 
-        System.out.println("LDBC SNB Loader | Mode: " + mode + " | Dataset: " + datasetPath);
+        // Backup path (optional, server-side path where backups are stored)
+        String backupPath = getConfig("YTDB_BACKUP_PATH", props, "ytdb.backup.path", null);
+        boolean backupEnabled = backupPath != null && !backupPath.isBlank();
+
+        System.out.println("LDBC SNB Loader");
+        System.out.println("  Mode:       " + mode);
+        System.out.println("  Dataset:    " + datasetPath);
+        System.out.println("  Backup:     " + (backupEnabled ? backupPath : "disabled"));
 
         YouTrackDB db = null;
         YTDBGraphTraversalSource traversal = null;
@@ -38,26 +48,42 @@ public class Main {
                     ? YourTracks.instance(serverHost, serverPort, serverUser, serverPassword)
                     : YourTracks.instance(dbPath);
 
-            if (db.exists(dbName)) {
-                db.drop(dbName);
+            long startTime = System.currentTimeMillis();
+            boolean restored = false;
+
+            if (backupEnabled) {
+                restored = tryRestore(db, dbName, backupPath);
             }
 
-            db.create(dbName, DatabaseType.DISK, databaseUser, databasePassword, "admin");
-            traversal = db.openTraversal(dbName, databaseUser, databasePassword);
+            if (restored) {
+                traversal = db.openTraversal(dbName);
+            } else {
+                // Load from CSVs
+                System.out.println("\nLoading data from CSVs...");
+                dropIfExists(db, dbName);
+                db.create(dbName, DatabaseType.DISK, databaseUser, databasePassword, "admin");
+                traversal = db.openTraversal(dbName, databaseUser, databasePassword);
 
-            new SchemaCreator(traversal).createSchema();
+                new SchemaCreator(traversal).createSchema();
 
-            long startTime = System.currentTimeMillis();
-            YtdbLoader loader = new YtdbLoader(traversal);
-            loader.loadAll(datasetPath);
+                YtdbLoader loader = new YtdbLoader(traversal);
+                loader.loadAll(datasetPath);
+
+                System.out.println("\nLoaded entities:");
+                Map<String, Long> counts = loader.counts();
+                counts.entrySet().stream()
+                        .sorted(Map.Entry.comparingByKey())
+                        .forEach(entry -> System.out.printf("  %-20s: %,d%n", entry.getKey(), entry.getValue()));
+
+                if (backupEnabled) {
+                    System.out.println("\nCreating backup at " + backupPath + "...");
+                    String backupFile = traversal.backup(Paths.get(backupPath));
+                    System.out.println("Backup created: " + backupFile);
+                }
+            }
 
             long duration = System.currentTimeMillis() - startTime;
-            System.out.println("\nCompleted in " + duration + "ms (" + (duration / 1000.0) + "s)\n");
-
-            Map<String, Long> counts = loader.counts();
-            counts.entrySet().stream()
-                    .sorted(Map.Entry.comparingByKey())
-                    .forEach(entry -> System.out.printf("  %-20s: %,d%n", entry.getKey(), entry.getValue()));
+            System.out.println("\nCompleted in " + duration + "ms (" + (duration / 1000.0) + "s)");
 
         } catch (Exception e) {
             System.err.println("Error: " + e.getMessage());
@@ -67,10 +93,42 @@ public class Main {
             if (traversal != null) {
                 traversal.close();
             }
-
             if (db != null) {
                 db.close();
             }
         }
+    }
+
+    private static boolean tryRestore(YouTrackDB db, String dbName, String backupPath) {
+        System.out.println("\nAttempting to restore from backup at " + backupPath + "...");
+        try {
+            dropIfExists(db, dbName);
+            db.restore(dbName, backupPath);
+            System.out.println("Database restored successfully from backup.");
+            return true;
+        } catch (Exception e) {
+            System.out.println("No backup found or restore failed: " + e.getMessage());
+            System.out.println("Falling back to loading from CSVs.");
+            // Clean up any partially created database from failed restore
+            dropIfExists(db, dbName);
+            return false;
+        }
+    }
+
+    private static void dropIfExists(YouTrackDB db, String dbName) {
+        try {
+            db.drop(dbName);
+            System.out.println("Dropped existing database: " + dbName);
+        } catch (Exception e) {
+            // DB doesn't exist
+        }
+    }
+
+    private static String getConfig(String envVar, Properties props, String propKey, String defaultValue) {
+        String envValue = System.getenv(envVar);
+        if (envValue != null && !envValue.isBlank()) {
+            return envValue;
+        }
+        return props.getProperty(propKey, defaultValue);
     }
 }
