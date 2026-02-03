@@ -44,17 +44,45 @@ docker build -t ytdb-loader .
 | `YTDB_DATABASE_NAME` | `ldbc_snb` | Database name to create |
 | `YTDB_DATABASE_USER` | `admin` | Database user |
 | `YTDB_DATABASE_PASSWORD` | `admin` | Database password |
-| `YTDB_TEST_DATA_DIR` | (from properties) | Path to LDBC dataset |
+| `YTDB_DATASET_PATH` | `/data` | Path to LDBC CSV dataset (client-side, in loader container) |
+| `YTDB_BACKUP_PATH` | (not set) | Server-side backup path (in DB container, optional) |
 
-### Running with Docker
+### Backup/Restore Behavior
+
+The `YTDB_BACKUP_PATH` variable controls backup/restore functionality:
+
+| `YTDB_BACKUP_PATH` | Behavior |
+|--------------------|----------|
+| **Not set** | Load from CSVs only, no backup created |
+| **Set** | Try restore from backup; on failure, load CSVs and create backup |
+
+**Important:** The backup path is a **server-side path**. In remote mode, the path is interpreted by the database server, not the loader client. Make sure the server has a volume mounted at this path.
+
+### Running with Docker (Remote Mode)
 
 ```bash
-# Load data into a remote YouTrackDB instance
+# Start YouTrackDB server with backup volume
+docker run -d --name ytdb-server \
+  -p 8182:8182 \
+  -v /host/path/to/backup:/backup \
+  youtrackdb/youtrackdb-server
+
+# Run loader - first time loads CSVs and creates backup
 docker run --rm \
-  -v /path/to/ldbc-snb-data:/data \
+  -v /path/to/ldbc-snb-data:/data:ro \
   -e YTDB_MODE=remote \
   -e YTDB_SERVER_HOST=host.docker.internal \
-  -e YTDB_TEST_DATA_DIR=/data \
+  -e YTDB_DATASET_PATH=/data \
+  -e YTDB_BACKUP_PATH=/backup \
+  ytdb-loader
+
+# Subsequent runs: instant restore from backup
+docker run --rm \
+  -v /path/to/ldbc-snb-data:/data:ro \
+  -e YTDB_MODE=remote \
+  -e YTDB_SERVER_HOST=host.docker.internal \
+  -e YTDB_DATASET_PATH=/data \
+  -e YTDB_BACKUP_PATH=/backup \
   ytdb-loader
 ```
 
@@ -79,6 +107,18 @@ dataset/
 ```
 
 You can generate test data using the [LDBC SNB Data Generator](https://github.com/ldbc/ldbc_snb_datagen_spark).
+
+## Backup/Restore Optimization
+
+For large scale factors (SF1+), loading from CSV can take significant time. The loader supports backup/restore to speed up subsequent loads:
+
+1. **First load**: Parses CSVs, creates schema, inserts data, then creates a backup
+2. **Subsequent loads**: Attempts restore from backup, instantly recreating the database
+
+This is particularly useful for:
+- Development/testing cycles where you need a fresh database state
+- Benchmark reruns without re-parsing gigabytes of CSV data
+- CI/CD pipelines that need consistent, fast database initialization
 
 ## Schema
 
