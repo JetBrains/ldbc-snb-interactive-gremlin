@@ -1,0 +1,64 @@
+services:
+  ytdb:
+    image: youtrackdb/youtrackdb-server:latest
+    ports:
+      - "8182:8182"
+    environment:
+      JAVA_TOOL_OPTIONS: "-Xmx1g"
+      YTDB_SERVER_PASSWORD: "root"
+    healthcheck:
+      test: ["CMD-SHELL", "code=$$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 http://localhost:8182/gremlin); [ \"$$code\" = \"200\" ] || [ \"$$code\" = \"400\" ]"]
+      interval: 5s
+      timeout: 2s
+      retries: 20
+      start_period: 10s
+    volumes:
+      - ./work/secrets:/opt/ytdb-server/secrets
+      - ./work/databases:/opt/ytdb-server/databases
+      - ./work/conf:/opt/ytdb-server/conf
+      - ./work/log:/opt/ytdb-server/log
+      - ./work/data-backup:/backup
+
+  datagen:
+    image: ldbc/datagen
+    environment:
+      HADOOP_CLIENT_OPTS: "-Xmx6G"
+    volumes:
+      - ./work/data:/opt/ldbc_snb_datagen/out
+      - ./datagen-params.ini:/opt/ldbc_snb_datagen/params.ini:ro
+
+  loader:
+    build:
+      context: ../../ytdb-loader
+      dockerfile: Dockerfile
+    environment:
+      YTDB_MODE: remote
+      YTDB_SERVER_HOST: ytdb
+      YTDB_SERVER_PORT: "8182"
+      YTDB_SERVER_USER: root
+      YTDB_SERVER_PASSWORD: root
+      YTDB_DATABASE_NAME: ldbc_snb
+      YTDB_DATABASE_USER: admin
+      YTDB_DATABASE_PASSWORD: admin
+      YTDB_DATASET_PATH: /data/social_network
+      YTDB_BACKUP_PATH: /backup
+    volumes:
+      - ./work/data:/data:ro
+    depends_on:
+      datagen:
+        condition: service_completed_successfully
+      ytdb:
+        condition: service_healthy
+
+  driver:
+    build:
+      context: ../../
+      dockerfile: ytdb/ldbc-validation/driver.Dockerfile
+    volumes:
+      - ./work/data:/data:ro
+      - ./work/results:/results
+    depends_on:
+      loader:
+        condition: service_completed_successfully
+      ytdb:
+        condition: service_healthy

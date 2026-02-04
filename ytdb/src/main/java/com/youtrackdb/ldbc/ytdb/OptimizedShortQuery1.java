@@ -2,6 +2,7 @@ package com.youtrackdb.ldbc.ytdb;
 
 import com.youtrackdb.ldbc.common.TinkerPopConnectionState;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.ldbcouncil.snb.driver.DbException;
 import org.ldbcouncil.snb.driver.OperationHandler;
 import org.ldbcouncil.snb.driver.ResultReporter;
@@ -26,25 +27,28 @@ public class OptimizedShortQuery1 implements OperationHandler<LdbcShortQuery1Per
             TinkerPopConnectionState state,
             ResultReporter resultReporter) throws DbException {
         try {
-            GraphTraversal<?, Map<String, Object>> traversal = buildTraversal(state, operation);
+            LdbcShortQuery1PersonProfileResult result = state.computeInTx(g -> {
+                GraphTraversal<?, Map<String, Object>> traversal = buildTraversal(operation, g);
+                if (traversal.hasNext()) {
+                    return toResult(traversal.next());
+                }
+                return null;
+            });
 
-            if (traversal.hasNext()) {
-                Map<String, Object> record = traversal.next();
-                LdbcShortQuery1PersonProfileResult result = toResult(record);
-                resultReporter.report(0, result, operation);
-            } else {
+            if (result == null) {
                 throw new DbException("No person found with ID: " + operation.getPersonIdSQ1());
             }
+
+            resultReporter.report(0, result, operation);
         } catch (Exception e) {
             throw new DbException("Error executing Short Query 1", e);
         }
     }
 
     protected GraphTraversal<?, Map<String, Object>> buildTraversal(
-            TinkerPopConnectionState state,
-            LdbcShortQuery1PersonProfile operation) throws Exception {
-
-        return state.computeInTx(g -> g.V()
+            LdbcShortQuery1PersonProfile operation,
+            GraphTraversalSource g) {
+        return g.V()
                 .has(PERSON, ID, operation.getPersonIdSQ1())
                 .project(
                         FIRST_NAME, LAST_NAME, BIRTHDAY,
@@ -58,7 +62,7 @@ public class OptimizedShortQuery1 implements OperationHandler<LdbcShortQuery1Per
                 .by(BROWSER_USED)
                 .by(out(IS_LOCATED_IN).values(ID))
                 .by(GENDER)
-                .by(CREATION_DATE));
+                .by(CREATION_DATE);
     }
 
     protected LdbcShortQuery1PersonProfileResult toResult(Map<String, Object> record) {
