@@ -25,7 +25,7 @@
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <youtrackdb.version>0.5.0-SNAPSHOT</youtrackdb.version>
+        <youtrackdb.version>0.5.0-dev-SNAPSHOT</youtrackdb.version>
         <tinkerpop.version>3.8.0</tinkerpop.version>
         <slf4j.version>2.0.9</slf4j.version>
 
