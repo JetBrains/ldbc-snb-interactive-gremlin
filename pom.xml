@@ -84,6 +84,23 @@
                 <version>${project.version}</version>
             </dependency>
 
+            <!--
+                TODO
+                TinkerPop Dependencies Note:
+
+                The common and runner modules depend on standard Apache TinkerPop for API compatibility.
+                However, the ytdb module uses YouTrackDB which brings its own TinkerPop fork
+                (io.youtrackdb:gremlin-*) with the same package names but different Maven coordinates.
+
+                At shade time, both versions end up in the uber-JAR causing duplicate class warnings.
+                The shade plugin is configured in runner/pom.xml to exclude the upstream TinkerPop
+                artifacts, so the YouTrackDB fork wins at runtime. This is safe because the fork
+                is API-compatible with upstream.
+
+                If adding a new provider that uses standard TinkerPop, this conflict would need
+                to be revisited (e.g., separate shaded JARs per provider, or YouTrackDB relocating
+                their fork to different packages).
+            -->
             <dependency>
                 <groupId>org.apache.tinkerpop</groupId>
                 <artifactId>gremlin-core</artifactId>
