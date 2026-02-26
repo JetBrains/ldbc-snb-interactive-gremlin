@@ -16,12 +16,12 @@ public class YtdbLoader {
 
     private static final Logger log = LoggerFactory.getLogger(YtdbLoader.class);
 
-    private static final int BATCH_SIZE = 50000;
-
     private final YTDBGraphTraversalSource traversal;
+    private final int batchSize;
 
-    public YtdbLoader(YTDBGraphTraversalSource traversal) {
+    public YtdbLoader(YTDBGraphTraversalSource traversal, int batchSize) {
         this.traversal = traversal;
+        this.batchSize = batchSize;
     }
 
     public void loadAll(Path datasetRoot) throws Exception {
@@ -121,7 +121,7 @@ public class YtdbLoader {
                 return;
             }
 
-            var processor = new CsvProcessor<T>(BATCH_SIZE);
+            var processor = new CsvProcessor<T>(batchSize);
             long count = processor.process(csvFile,
                     parser::apply,
                     inserter::accept
@@ -292,7 +292,7 @@ public class YtdbLoader {
                 return;
             }
 
-            var processor = new CsvProcessor<SimpleEdge>(BATCH_SIZE);
+            var processor = new CsvProcessor<SimpleEdge>(batchSize);
 
             long count = processor.process(csvFile,
                     SimpleEdge::parse,
@@ -324,7 +324,7 @@ public class YtdbLoader {
             return;
         }
 
-        var processor = new CsvProcessor<KnowsEdge>(BATCH_SIZE);
+        var processor = new CsvProcessor<KnowsEdge>(batchSize);
         long count = processor.process(csvFile,
                 KnowsEdge::parse,
                 this::insertKnowsEdges
@@ -355,7 +355,7 @@ public class YtdbLoader {
             return;
         }
 
-        var processor = new CsvProcessor<StudyAtEdge>(BATCH_SIZE);
+        var processor = new CsvProcessor<StudyAtEdge>(batchSize);
 
         long count = processor.process(csvFile,
                 StudyAtEdge::parse,
@@ -382,7 +382,7 @@ public class YtdbLoader {
             return;
         }
 
-        var processor = new CsvProcessor<WorkAtEdge>(BATCH_SIZE);
+        var processor = new CsvProcessor<WorkAtEdge>(batchSize);
 
         long count = processor.process(csvFile,
                 WorkAtEdge::parse,
@@ -409,7 +409,7 @@ public class YtdbLoader {
             return;
         }
 
-        var processor = new CsvProcessor<HasMemberEdge>(BATCH_SIZE);
+        var processor = new CsvProcessor<HasMemberEdge>(batchSize);
 
         long count = processor.process(csvFile,
                 HasMemberEdge::parse,
@@ -437,7 +437,7 @@ public class YtdbLoader {
                 return;
             }
 
-            var processor = new CsvProcessor<LikesEdge>(BATCH_SIZE);
+            var processor = new CsvProcessor<LikesEdge>(batchSize);
 
             long count = processor.process(csvFile,
                     LikesEdge::parse,

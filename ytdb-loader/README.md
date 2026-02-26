@@ -31,6 +31,25 @@ docker build -t ytdb-loader .
 
 ## Usage
 
+### Configuration
+
+Configuration is resolved in this order (later overrides earlier):
+
+1. **Built-in defaults** (in `LoaderConfig.java`)
+2. **Classpath properties** (`loader.properties` bundled in JAR)
+3. **External config file** (via `-c` flag or `YTDB_CONFIG` env var)
+4. **Environment variables** (`YTDB_*`)
+
+To use an external config file:
+
+```bash
+# Via CLI flag
+java -jar ytdb-loader.jar -c /path/to/my-config.properties
+
+# Via environment variable
+YTDB_CONFIG=/path/to/my-config.properties java -jar ytdb-loader.jar
+```
+
 ### Environment Variables
 
 | Variable | Default | Description |
@@ -46,6 +65,8 @@ docker build -t ytdb-loader .
 | `YTDB_DATABASE_PASSWORD` | `admin` | Database password |
 | `YTDB_DATASET_PATH` | `/data` | Path to LDBC CSV dataset (client-side, in loader container) |
 | `YTDB_BACKUP_PATH` | (not set) | Server-side backup path (in DB container, optional) |
+| `YTDB_BATCH_SIZE` | `50000` | Number of records per transaction batch |
+| `YTDB_CONFIG` | (not set) | Path to external properties file |
 
 ### Backup/Restore Behavior
 

@@ -11,7 +11,7 @@
     </parent>
 
     <properties>
-        <youtrackdb.version>0.5.0-dev-SNAPSHOT</youtrackdb.version>
+        <youtrackdb.version>0.5.0-20260225.083316-0b4ec11-SNAPSHOT</youtrackdb.version>
     </properties>
 
     <artifactId>ytdb</artifactId>
@@ -59,6 +59,28 @@
         <dependency>
             <groupId>com.youtrackdb.ldbc</groupId>
             <artifactId>common</artifactId>
+        </dependency>
+
+        <!-- Required at runtime by youtrackdb-core for backup/restore -->
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.21.0</version>
+        </dependency>
+
+        <!-- Override commons-collections4 4.0 from LDBC driver;
+             youtrackdb-core SQL MATCH engine needs >=4.1 (IterableUtils) -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-collections4</artifactId>
+            <version>4.5.0</version>
+        </dependency>
+
+        <!-- Test dependencies -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 </project>

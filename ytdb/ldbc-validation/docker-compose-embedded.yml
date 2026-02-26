@@ -1,0 +1,31 @@
+services:
+  loader:
+    build:
+      context: ../../ytdb-loader
+      dockerfile: Dockerfile
+    environment:
+      YTDB_MODE: embedded
+      YTDB_DATA_DIR: /ytdb-data/databases
+      YTDB_DATABASE_NAME: ldbc_snb
+      YTDB_DATABASE_USER: admin
+      YTDB_DATABASE_PASSWORD: admin
+      YTDB_DATASET_PATH: /data/social_network
+      YTDB_BACKUP_PATH: /ytdb-data/backup
+    volumes:
+      - ./work/data:/data:ro
+      - ./work/databases:/ytdb-data/databases
+      - ./work/data-backup:/ytdb-data/backup
+
+  driver:
+    build:
+      context: ../../
+      dockerfile: ytdb/ldbc-validation/driver.Dockerfile
+    environment:
+      YTDB_MODE: embedded
+    volumes:
+      - ./work/data:/data:ro
+      - ./work/results:/results
+      - ./work/databases:/ytdb-data/databases
+    depends_on:
+      loader:
+        condition: service_completed_successfully

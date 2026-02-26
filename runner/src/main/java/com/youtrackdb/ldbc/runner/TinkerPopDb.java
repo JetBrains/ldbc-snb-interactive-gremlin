@@ -106,6 +106,8 @@ public class TinkerPopDb extends Db {
                 (OperationHandler<T, TinkerPopConnectionState>)
                     injector.getInstance(Key.get(OperationHandler.class, Names.named(queryName)));
 
+            loggingService.info("Handler for " + queryName + " -> " + handler.getClass().getName());
+
             //noinspection unchecked
             registerOperationHandler(operationType, handler.getClass());
 

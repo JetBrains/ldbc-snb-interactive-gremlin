@@ -18,15 +18,6 @@ WORKDIR /app
 COPY --from=builder /build/target/ytdb-loader-1.0-SNAPSHOT.jar loader.jar
 
 ENV YTDB_MODE=remote
-ENV YTDB_SERVER_HOST=localhost
-ENV YTDB_SERVER_PORT=8182
-ENV YTDB_SERVER_USER=root
-ENV YTDB_SERVER_PASSWORD=root
-ENV YTDB_DATABASE_NAME=ldbc_snb
-ENV YTDB_DATABASE_USER=admin
-ENV YTDB_DATABASE_PASSWORD=admin
-ENV YTDB_DATASET_PATH=/data
-# YTDB_BACKUP_PATH - optional, server-side path for backup/restore
 
 VOLUME /data
 
