@@ -19,19 +19,19 @@ public class SqlComplexQuery3
 
   @Override
   public void executeOperation(
-      LdbcQuery3 op,
+      LdbcQuery3 operation,
       TinkerPopConnectionState state,
-      ResultReporter rr) throws DbException {
+      ResultReporter resultReporter) throws DbException {
     try {
-      var endDate = GremlinHelpers.plusDays(op.getStartDate(), op.getDurationDays());
-      var results = state.computeInTx(g -> {
-        var rows = query(g, LdbcQuerySql.IC3,
-            "personId", op.getPersonIdQ3(),
-            "countryX", op.getCountryXName(),
-            "countryY", op.getCountryYName(),
-            "startDate", op.getStartDate(),
+      var endDate = GremlinHelpers.plusDays(operation.getStartDate(), operation.getDurationDays());
+      var results = state.computeInTx(graph -> {
+        var rows = query(graph, LdbcQuerySql.IC3,
+            "personId", operation.getPersonIdQ3(),
+            "countryX", operation.getCountryXName(),
+            "countryY", operation.getCountryYName(),
+            "startDate", operation.getStartDate(),
             "endDate", endDate,
-            "limit", op.getLimit());
+            "limit", operation.getLimit());
         return rows.stream().map(row -> new LdbcQuery3Result(
             toLong(row.get("personId")),
             toStr(row.get("firstName")),
@@ -41,9 +41,7 @@ public class SqlComplexQuery3
             toLong(row.get("totalCount"))
         )).toList();
       });
-      rr.report(results.size(), results, op);
-    } catch (DbException e) {
-      throw e;
+      resultReporter.report(results.size(), results, operation);
     } catch (Exception e) {
       throw new DbException("Error executing SQL Complex Query 3", e);
     }

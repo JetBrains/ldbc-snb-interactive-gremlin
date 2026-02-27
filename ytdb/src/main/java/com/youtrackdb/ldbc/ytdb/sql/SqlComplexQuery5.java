@@ -18,23 +18,21 @@ public class SqlComplexQuery5
 
   @Override
   public void executeOperation(
-      LdbcQuery5 op,
+      LdbcQuery5 operation,
       TinkerPopConnectionState state,
-      ResultReporter rr) throws DbException {
+      ResultReporter resultReporter) throws DbException {
     try {
-      var results = state.computeInTx(g -> {
-        var rows = query(g, LdbcQuerySql.IC5,
-            "personId", op.getPersonIdQ5(),
-            "minDate", op.getMinDate(),
-            "limit", op.getLimit());
+      var results = state.computeInTx(graph -> {
+        var rows = query(graph, LdbcQuerySql.IC5,
+            "personId", operation.getPersonIdQ5(),
+            "minDate", operation.getMinDate(),
+            "limit", operation.getLimit());
         return rows.stream().map(row -> new LdbcQuery5Result(
             toStr(row.get("forumTitle")),
             toInt(row.get("postCount"))
         )).toList();
       });
-      rr.report(results.size(), results, op);
-    } catch (DbException e) {
-      throw e;
+      resultReporter.report(results.size(), results, operation);
     } catch (Exception e) {
       throw new DbException("Error executing SQL Complex Query 5", e);
     }

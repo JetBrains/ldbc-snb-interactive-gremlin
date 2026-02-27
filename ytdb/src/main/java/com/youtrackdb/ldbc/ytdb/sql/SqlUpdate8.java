@@ -18,17 +18,15 @@ public class SqlUpdate8
 
   @Override
   public void executeOperation(
-      LdbcUpdate8AddFriendship op,
+      LdbcUpdate8AddFriendship operation,
       TinkerPopConnectionState state,
-      ResultReporter rr) throws DbException {
+      ResultReporter resultReporter) throws DbException {
     try {
-      state.executeInTx(g -> exec(g, LdbcQuerySql.U8,
-          "person1Id", op.getPerson1Id(),
-          "person2Id", op.getPerson2Id(),
-          "creationDate", op.getCreationDate()));
-      rr.report(0, LdbcNoResult.INSTANCE, op);
-    } catch (DbException e) {
-      throw e;
+      state.executeInTx(graph -> exec(graph, LdbcQuerySql.U8,
+          "person1Id", operation.getPerson1Id(),
+          "person2Id", operation.getPerson2Id(),
+          "creationDate", operation.getCreationDate()));
+      resultReporter.report(0, LdbcNoResult.INSTANCE, operation);
     } catch (Exception e) {
       throw new DbException("Error executing SQL Update 8", e);
     }

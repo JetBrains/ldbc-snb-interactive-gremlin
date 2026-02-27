@@ -18,15 +18,15 @@ public class SqlComplexQuery9
 
   @Override
   public void executeOperation(
-      LdbcQuery9 op,
+      LdbcQuery9 operation,
       TinkerPopConnectionState state,
-      ResultReporter rr) throws DbException {
+      ResultReporter resultReporter) throws DbException {
     try {
-      var results = state.computeInTx(g -> {
-        var rows = query(g, LdbcQuerySql.IC9,
-            "personId", op.getPersonIdQ9(),
-            "maxDate", op.getMaxDate(),
-            "limit", op.getLimit());
+      var results = state.computeInTx(graph -> {
+        var rows = query(graph, LdbcQuerySql.IC9,
+            "personId", operation.getPersonIdQ9(),
+            "maxDate", operation.getMaxDate(),
+            "limit", operation.getLimit());
         return rows.stream().map(row -> new LdbcQuery9Result(
             toLong(row.get("personId")),
             toStr(row.get("firstName")),
@@ -36,9 +36,7 @@ public class SqlComplexQuery9
             toDateMillis(row.get("messageCreationDate"))
         )).toList();
       });
-      rr.report(results.size(), results, op);
-    } catch (DbException e) {
-      throw e;
+      resultReporter.report(results.size(), results, operation);
     } catch (Exception e) {
       throw new DbException("Error executing SQL Complex Query 9", e);
     }

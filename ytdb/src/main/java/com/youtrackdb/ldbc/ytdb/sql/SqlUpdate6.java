@@ -19,31 +19,29 @@ public class SqlUpdate6
 
   @Override
   public void executeOperation(
-      LdbcUpdate6AddPost op,
+      LdbcUpdate6AddPost operation,
       TinkerPopConnectionState state,
-      ResultReporter rr) throws DbException {
+      ResultReporter resultReporter) throws DbException {
     try {
-      state.executeInTx(g -> {
-        exec(g, LdbcQuerySql.U6,
-            "postId", op.getPostId(),
-            "creationDate", op.getCreationDate(),
-            "locationIP", op.getLocationIp(),
-            "browserUsed", op.getBrowserUsed(),
-            "language", op.getLanguage(),
-            "content", op.getContent(),
-            "imageFile", op.getImageFile(),
-            "length", op.getLength(),
-            "authorPersonId", op.getAuthorPersonId(),
-            "forumId", op.getForumId(),
-            "countryId", op.getCountryId());
+      state.executeInTx(graph -> {
+        exec(graph, LdbcQuerySql.U6,
+            "postId", operation.getPostId(),
+            "creationDate", operation.getCreationDate(),
+            "locationIP", operation.getLocationIp(),
+            "browserUsed", operation.getBrowserUsed(),
+            "language", operation.getLanguage(),
+            "content", operation.getContent(),
+            "imageFile", operation.getImageFile(),
+            "length", operation.getLength(),
+            "authorPersonId", operation.getAuthorPersonId(),
+            "forumId", operation.getForumId(),
+            "countryId", operation.getCountryId());
 
-        for (Long tagId : op.getTagIds()) {
-          exec(g, LdbcQuerySql.U6_HAS_TAG, "postId", op.getPostId(), "tagId", tagId);
+        for (Long tagId : operation.getTagIds()) {
+          exec(graph, LdbcQuerySql.U6_HAS_TAG, "postId", operation.getPostId(), "tagId", tagId);
         }
       });
-      rr.report(0, LdbcNoResult.INSTANCE, op);
-    } catch (DbException e) {
-      throw e;
+      resultReporter.report(0, LdbcNoResult.INSTANCE, operation);
     } catch (Exception e) {
       throw new DbException("Error executing SQL Update 6", e);
     }

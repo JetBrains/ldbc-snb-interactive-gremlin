@@ -17,17 +17,15 @@ public class SqlUpdate3
 
   @Override
   public void executeOperation(
-      LdbcUpdate3AddCommentLike op,
+      LdbcUpdate3AddCommentLike operation,
       TinkerPopConnectionState state,
-      ResultReporter rr) throws DbException {
+      ResultReporter resultReporter) throws DbException {
     try {
-      state.executeInTx(g -> exec(g, LdbcQuerySql.U3,
-          "personId", op.getPersonId(),
-          "commentId", op.getCommentId(),
-          "creationDate", op.getCreationDate()));
-      rr.report(0, LdbcNoResult.INSTANCE, op);
-    } catch (DbException e) {
-      throw e;
+      state.executeInTx(graph -> exec(graph, LdbcQuerySql.U3,
+          "personId", operation.getPersonId(),
+          "commentId", operation.getCommentId(),
+          "creationDate", operation.getCreationDate()));
+      resultReporter.report(0, LdbcNoResult.INSTANCE, operation);
     } catch (Exception e) {
       throw new DbException("Error executing SQL Update 3", e);
     }

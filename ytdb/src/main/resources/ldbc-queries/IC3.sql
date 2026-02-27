@@ -3,7 +3,8 @@ SELECT personId, firstName, lastName,
   ($xCount[0].cnt + $yCount[0].cnt) as totalCount
 FROM (
   MATCH {class: Person, as: start, where: (id = :personId)}
-    .out('KNOWS'){while: ($depth < 3), as: person}
+    .out('KNOWS'){while: ($depth < 2), as: person,
+      where: (@rid <> $matched.start.@rid)}
     .out('IS_LOCATED_IN'){as: personCity}
     .out('IS_PART_OF'){as: personCountry,
       where: (name NOT IN [:countryX, :countryY])}

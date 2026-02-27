@@ -17,17 +17,15 @@ public class SqlUpdate2
 
   @Override
   public void executeOperation(
-      LdbcUpdate2AddPostLike op,
+      LdbcUpdate2AddPostLike operation,
       TinkerPopConnectionState state,
-      ResultReporter rr) throws DbException {
+      ResultReporter resultReporter) throws DbException {
     try {
-      state.executeInTx(g -> exec(g, LdbcQuerySql.U2,
-          "personId", op.getPersonId(),
-          "postId", op.getPostId(),
-          "creationDate", op.getCreationDate()));
-      rr.report(0, LdbcNoResult.INSTANCE, op);
-    } catch (DbException e) {
-      throw e;
+      state.executeInTx(graph -> exec(graph, LdbcQuerySql.U2,
+          "personId", operation.getPersonId(),
+          "postId", operation.getPostId(),
+          "creationDate", operation.getCreationDate()));
+      resultReporter.report(0, LdbcNoResult.INSTANCE, operation);
     } catch (Exception e) {
       throw new DbException("Error executing SQL Update 2", e);
     }

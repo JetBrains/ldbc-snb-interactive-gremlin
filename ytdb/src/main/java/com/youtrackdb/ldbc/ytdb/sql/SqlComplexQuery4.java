@@ -19,25 +19,23 @@ public class SqlComplexQuery4
 
   @Override
   public void executeOperation(
-      LdbcQuery4 op,
+      LdbcQuery4 operation,
       TinkerPopConnectionState state,
-      ResultReporter rr) throws DbException {
+      ResultReporter resultReporter) throws DbException {
     try {
-      var endDate = GremlinHelpers.plusDays(op.getStartDate(), op.getDurationDays());
-      var results = state.computeInTx(g -> {
-        var rows = query(g, LdbcQuerySql.IC4,
-            "personId", op.getPersonIdQ4(),
-            "startDate", op.getStartDate(),
+      var endDate = GremlinHelpers.plusDays(operation.getStartDate(), operation.getDurationDays());
+      var results = state.computeInTx(graph -> {
+        var rows = query(graph, LdbcQuerySql.IC4,
+            "personId", operation.getPersonIdQ4(),
+            "startDate", operation.getStartDate(),
             "endDate", endDate,
-            "limit", op.getLimit());
+            "limit", operation.getLimit());
         return rows.stream().map(row -> new LdbcQuery4Result(
             toStr(row.get("tagName")),
             toInt(row.get("postCount"))
         )).toList();
       });
-      rr.report(results.size(), results, op);
-    } catch (DbException e) {
-      throw e;
+      resultReporter.report(results.size(), results, operation);
     } catch (Exception e) {
       throw new DbException("Error executing SQL Complex Query 4", e);
     }

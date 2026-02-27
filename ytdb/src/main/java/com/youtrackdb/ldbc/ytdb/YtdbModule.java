@@ -5,46 +5,8 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
 import com.youtrackdb.ldbc.common.GraphProvider;
 import com.youtrackdb.ldbc.common.OperationBindings;
-import com.youtrackdb.ldbc.ytdb.sql.SqlShortQuery1;
-import com.youtrackdb.ldbc.ytdb.sql.SqlShortQuery2;
-import com.youtrackdb.ldbc.ytdb.sql.SqlShortQuery3;
-import com.youtrackdb.ldbc.ytdb.sql.SqlShortQuery4;
-import com.youtrackdb.ldbc.ytdb.sql.SqlShortQuery5;
-import com.youtrackdb.ldbc.ytdb.sql.SqlShortQuery6;
-import com.youtrackdb.ldbc.ytdb.sql.SqlShortQuery7;
-import com.youtrackdb.ldbc.ytdb.sql.SqlComplexQuery1;
-import com.youtrackdb.ldbc.ytdb.sql.SqlComplexQuery10;
-import com.youtrackdb.ldbc.ytdb.sql.SqlComplexQuery11;
-import com.youtrackdb.ldbc.ytdb.sql.SqlComplexQuery12;
-import com.youtrackdb.ldbc.ytdb.sql.SqlComplexQuery13;
-import com.youtrackdb.ldbc.ytdb.sql.SqlComplexQuery2;
-import com.youtrackdb.ldbc.ytdb.sql.SqlComplexQuery3;
-import com.youtrackdb.ldbc.ytdb.sql.SqlComplexQuery4;
-import com.youtrackdb.ldbc.ytdb.sql.SqlComplexQuery5;
-import com.youtrackdb.ldbc.ytdb.sql.SqlComplexQuery6;
-import com.youtrackdb.ldbc.ytdb.sql.SqlComplexQuery7;
-import com.youtrackdb.ldbc.ytdb.sql.SqlComplexQuery8;
-import com.youtrackdb.ldbc.ytdb.sql.SqlComplexQuery9;
-import org.ldbcouncil.snb.driver.workloads.interactive.LdbcQuery1;
-import org.ldbcouncil.snb.driver.workloads.interactive.LdbcQuery10;
-import org.ldbcouncil.snb.driver.workloads.interactive.LdbcQuery11;
-import org.ldbcouncil.snb.driver.workloads.interactive.LdbcQuery12;
-import org.ldbcouncil.snb.driver.workloads.interactive.LdbcQuery13;
-import org.ldbcouncil.snb.driver.workloads.interactive.LdbcQuery2;
-import org.ldbcouncil.snb.driver.workloads.interactive.LdbcQuery3;
-import org.ldbcouncil.snb.driver.workloads.interactive.LdbcQuery4;
-import org.ldbcouncil.snb.driver.workloads.interactive.LdbcQuery5;
-import org.ldbcouncil.snb.driver.workloads.interactive.LdbcQuery6;
-import org.ldbcouncil.snb.driver.workloads.interactive.LdbcQuery7;
-import org.ldbcouncil.snb.driver.workloads.interactive.LdbcQuery8;
-import org.ldbcouncil.snb.driver.workloads.interactive.LdbcQuery9;
-import org.ldbcouncil.snb.driver.workloads.interactive.LdbcShortQuery1PersonProfile;
-import org.ldbcouncil.snb.driver.workloads.interactive.LdbcShortQuery2PersonPosts;
-import org.ldbcouncil.snb.driver.workloads.interactive.LdbcShortQuery3PersonFriends;
-import org.ldbcouncil.snb.driver.workloads.interactive.LdbcShortQuery4MessageContent;
-import org.ldbcouncil.snb.driver.workloads.interactive.LdbcShortQuery5MessageCreator;
-import org.ldbcouncil.snb.driver.workloads.interactive.LdbcShortQuery6MessageForum;
-import org.ldbcouncil.snb.driver.workloads.interactive.LdbcShortQuery7MessageReplies;
+import com.youtrackdb.ldbc.ytdb.sql.*;
+import org.ldbcouncil.snb.driver.workloads.interactive.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -97,6 +59,15 @@ public class YtdbModule extends AbstractModule {
         OperationBindings.bindQuery(this.binder(), LdbcQuery11.class, SqlComplexQuery11.class);
         OperationBindings.bindQuery(this.binder(), LdbcQuery12.class, SqlComplexQuery12.class);
         OperationBindings.bindQuery(this.binder(), LdbcQuery13.class, SqlComplexQuery13.class);
+
+        OperationBindings.bindQuery(this.binder(), LdbcUpdate1AddPerson.class, SqlUpdate1.class);
+        OperationBindings.bindQuery(this.binder(), LdbcUpdate2AddPostLike.class, SqlUpdate2.class);
+        OperationBindings.bindQuery(this.binder(), LdbcUpdate3AddCommentLike.class, SqlUpdate3.class);
+        OperationBindings.bindQuery(this.binder(), LdbcUpdate4AddForum.class, SqlUpdate4.class);
+        OperationBindings.bindQuery(this.binder(), LdbcUpdate5AddForumMembership.class, SqlUpdate5.class);
+        OperationBindings.bindQuery(this.binder(), LdbcUpdate6AddPost.class, SqlUpdate6.class);
+        OperationBindings.bindQuery(this.binder(), LdbcUpdate7AddComment.class, SqlUpdate7.class);
+        OperationBindings.bindQuery(this.binder(), LdbcUpdate8AddFriendship.class, SqlUpdate8.class);
     }
 
     private String resolveMode() {

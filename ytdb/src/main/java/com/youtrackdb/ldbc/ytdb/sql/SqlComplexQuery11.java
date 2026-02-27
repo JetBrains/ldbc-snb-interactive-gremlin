@@ -19,16 +19,16 @@ public class SqlComplexQuery11
 
   @Override
   public void executeOperation(
-      LdbcQuery11 op,
+      LdbcQuery11 operation,
       TinkerPopConnectionState state,
-      ResultReporter rr) throws DbException {
+      ResultReporter resultReporter) throws DbException {
     try {
-      var results = state.computeInTx(g -> {
-        var rows = query(g, LdbcQuerySql.IC11,
-            "personId", op.getPersonIdQ11(),
-            "workFromYear", op.getWorkFromYear(),
-            "countryName", op.getCountryName(),
-            "limit", op.getLimit());
+      var results = state.computeInTx(graph -> {
+        var rows = query(graph, LdbcQuerySql.IC11,
+            "personId", operation.getPersonIdQ11(),
+            "workFromYear", operation.getWorkFromYear(),
+            "countryName", operation.getCountryName(),
+            "limit", operation.getLimit());
         return rows.stream().map(row -> new LdbcQuery11Result(
             toLong(row.get("personId")),
             toStr(row.get("firstName")),
@@ -37,9 +37,7 @@ public class SqlComplexQuery11
             toInt(row.get("organizationWorkFromYear"))
         )).toList();
       });
-      rr.report(results.size(), results, op);
-    } catch (DbException e) {
-      throw e;
+      resultReporter.report(results.size(), results, operation);
     } catch (Exception e) {
       throw new DbException("Error executing SQL Complex Query 11", e);
     }

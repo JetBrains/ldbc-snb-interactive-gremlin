@@ -18,8 +18,8 @@ public class SqlShortQuery4
       TinkerPopConnectionState state,
       ResultReporter resultReporter) throws DbException {
     try {
-      var result = state.computeInTx(g -> {
-        var row = querySingle(g, LdbcQuerySql.IS4,
+      var result = state.computeInTx(graph -> {
+        var row = querySingle(graph, LdbcQuerySql.IS4,
             "messageId", operation.getMessageIdContent());
         if (row == null) {
           throw new DbException(
@@ -31,8 +31,6 @@ public class SqlShortQuery4
         );
       });
       resultReporter.report(0, result, operation);
-    } catch (DbException e) {
-      throw e;
     } catch (Exception e) {
       throw new DbException("Error executing Baseline Short Query 4", e);
     }

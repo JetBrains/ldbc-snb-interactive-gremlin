@@ -23,23 +23,23 @@ public class SqlComplexQuery10
 
   @Override
   public void executeOperation(
-      LdbcQuery10 op,
+      LdbcQuery10 operation,
       TinkerPopConnectionState state,
-      ResultReporter rr) throws DbException {
+      ResultReporter resultReporter) throws DbException {
     try {
-      int month = op.getMonth();
+      int month = operation.getMonth();
       int nextMonth = (month % 12) + 1;
       String startMd = String.format("%02d%02d", month, 21);
       String endMd = String.format("%02d%02d", nextMonth, 22);
       boolean wrap = month == 12;
 
-      var results = state.computeInTx(g -> {
-        var rows = query(g, LdbcQuerySql.IC10,
-            "personId", op.getPersonIdQ10(),
+      var results = state.computeInTx(graph -> {
+        var rows = query(graph, LdbcQuerySql.IC10,
+            "personId", operation.getPersonIdQ10(),
             "startMd", startMd,
             "endMd", endMd,
             "wrap", wrap,
-            "limit", op.getLimit());
+            "limit", operation.getLimit());
         return rows.stream().map(row -> new LdbcQuery10Result(
             toLong(row.get("personId")),
             toStr(row.get("firstName")),
@@ -49,9 +49,7 @@ public class SqlComplexQuery10
             toStr(row.get("cityName"))
         )).toList();
       });
-      rr.report(results.size(), results, op);
-    } catch (DbException e) {
-      throw e;
+      resultReporter.report(results.size(), results, operation);
     } catch (Exception e) {
       throw new DbException("Error executing SQL Complex Query 10", e);
     }

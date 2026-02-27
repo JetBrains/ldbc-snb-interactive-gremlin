@@ -25,15 +25,15 @@ public class SqlComplexQuery1
 
   @Override
   public void executeOperation(
-      LdbcQuery1 op,
+      LdbcQuery1 operation,
       TinkerPopConnectionState state,
-      ResultReporter rr) throws DbException {
+      ResultReporter resultReporter) throws DbException {
     try {
-      var results = state.computeInTx(g -> {
-        var rows = query(g, LdbcQuerySql.IC1,
-            "personId", op.getPersonIdQ1(),
-            "firstName", op.getFirstName(),
-            "limit", op.getLimit());
+      var results = state.computeInTx(graph -> {
+        var rows = query(graph, LdbcQuerySql.IC1,
+            "personId", operation.getPersonIdQ1(),
+            "firstName", operation.getFirstName(),
+            "limit", operation.getLimit());
         return rows.stream().map(row -> new LdbcQuery1Result(
             toLong(row.get("personId")),
             toStr(row.get("lastName")),
@@ -52,9 +52,7 @@ public class SqlComplexQuery1
                 "compName", "workFromYear", "compCountryName")
         )).toList();
       });
-      rr.report(results.size(), results, op);
-    } catch (DbException e) {
-      throw e;
+      resultReporter.report(results.size(), results, operation);
     } catch (Exception e) {
       throw new DbException("Error executing SQL Complex Query 1", e);
     }

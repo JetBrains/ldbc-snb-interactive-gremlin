@@ -11,7 +11,7 @@ FROM (
       MATCH {class: Person, as: start, where: (id = :personId)}
         .out('KNOWS'){while: ($depth < 2), as: person,
           where: (@rid <> $matched.start.@rid)}
-        .inE('HAS_MEMBER'){as: membership, where: (joinDate > :minDate)}
+        .inE('HAS_MEMBER'){as: membership, where: (joinDate >= :minDate)}
         .outV(){class: Forum, as: forum}
       RETURN person, forum
     )

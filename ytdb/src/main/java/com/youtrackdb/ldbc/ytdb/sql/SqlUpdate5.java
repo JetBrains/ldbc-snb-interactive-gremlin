@@ -17,17 +17,15 @@ public class SqlUpdate5
 
   @Override
   public void executeOperation(
-      LdbcUpdate5AddForumMembership op,
+      LdbcUpdate5AddForumMembership operation,
       TinkerPopConnectionState state,
-      ResultReporter rr) throws DbException {
+      ResultReporter resultReporter) throws DbException {
     try {
-      state.executeInTx(g -> exec(g, LdbcQuerySql.U5,
-          "forumId", op.getForumId(),
-          "personId", op.getPersonId(),
-          "joinDate", op.getJoinDate()));
-      rr.report(0, LdbcNoResult.INSTANCE, op);
-    } catch (DbException e) {
-      throw e;
+      state.executeInTx(graph -> exec(graph, LdbcQuerySql.U5,
+          "forumId", operation.getForumId(),
+          "personId", operation.getPersonId(),
+          "joinDate", operation.getJoinDate()));
+      resultReporter.report(0, LdbcNoResult.INSTANCE, operation);
     } catch (Exception e) {
       throw new DbException("Error executing SQL Update 5", e);
     }

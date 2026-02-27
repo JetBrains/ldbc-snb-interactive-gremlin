@@ -1,7 +1,7 @@
 package com.youtrackdb.ldbc.ytdb;
 
 import com.jetbrains.youtrackdb.api.gremlin.YTDBGraphTraversalSource;
-import com.youtrackdb.ldbc.ytdb.baseline.SqlResultHelper;
+import com.youtrackdb.ldbc.ytdb.sql.SqlResultHelper;
 
 import java.util.List;
 import java.util.Map;

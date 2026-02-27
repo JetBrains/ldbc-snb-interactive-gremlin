@@ -19,43 +19,41 @@ public class SqlUpdate1
 
   @Override
   public void executeOperation(
-      LdbcUpdate1AddPerson op,
+      LdbcUpdate1AddPerson operation,
       TinkerPopConnectionState state,
-      ResultReporter rr) throws DbException {
+      ResultReporter resultReporter) throws DbException {
     try {
-      state.executeInTx(g -> {
-        exec(g, LdbcQuerySql.U1,
-            "personId", op.getPersonId(),
-            "firstName", op.getPersonFirstName(),
-            "lastName", op.getPersonLastName(),
-            "gender", op.getGender(),
-            "birthday", op.getBirthday(),
-            "creationDate", op.getCreationDate(),
-            "locationIP", op.getLocationIp(),
-            "browserUsed", op.getBrowserUsed(),
-            "languages", op.getLanguages(),
-            "emails", op.getEmails(),
-            "cityId", op.getCityId());
+      state.executeInTx(graph -> {
+        exec(graph, LdbcQuerySql.U1,
+            "personId", operation.getPersonId(),
+            "firstName", operation.getPersonFirstName(),
+            "lastName", operation.getPersonLastName(),
+            "gender", operation.getGender(),
+            "birthday", operation.getBirthday(),
+            "creationDate", operation.getCreationDate(),
+            "locationIP", operation.getLocationIp(),
+            "browserUsed", operation.getBrowserUsed(),
+            "languages", operation.getLanguages(),
+            "emails", operation.getEmails(),
+            "cityId", operation.getCityId());
 
-        for (Long tagId : op.getTagIds()) {
-          exec(g, LdbcQuerySql.U1_HAS_INTEREST, "personId", op.getPersonId(), "tagId", tagId);
+        for (Long tagId : operation.getTagIds()) {
+          exec(graph, LdbcQuerySql.U1_HAS_INTEREST, "personId", operation.getPersonId(), "tagId", tagId);
         }
-        for (LdbcUpdate1AddPerson.Organization org : op.getStudyAt()) {
-          exec(g, LdbcQuerySql.U1_STUDY_AT,
-              "personId", op.getPersonId(),
+        for (LdbcUpdate1AddPerson.Organization org : operation.getStudyAt()) {
+          exec(graph, LdbcQuerySql.U1_STUDY_AT,
+              "personId", operation.getPersonId(),
               "orgId", org.getOrganizationId(),
               "classYear", org.getYear());
         }
-        for (LdbcUpdate1AddPerson.Organization org : op.getWorkAt()) {
-          exec(g, LdbcQuerySql.U1_WORK_AT,
-              "personId", op.getPersonId(),
+        for (LdbcUpdate1AddPerson.Organization org : operation.getWorkAt()) {
+          exec(graph, LdbcQuerySql.U1_WORK_AT,
+              "personId", operation.getPersonId(),
               "orgId", org.getOrganizationId(),
               "workFrom", org.getYear());
         }
       });
-      rr.report(0, LdbcNoResult.INSTANCE, op);
-    } catch (DbException e) {
-      throw e;
+      resultReporter.report(0, LdbcNoResult.INSTANCE, operation);
     } catch (Exception e) {
       throw new DbException("Error executing SQL Update 1", e);
     }

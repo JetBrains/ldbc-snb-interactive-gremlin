@@ -19,38 +19,36 @@ public class SqlUpdate7
 
   @Override
   public void executeOperation(
-      LdbcUpdate7AddComment op,
+      LdbcUpdate7AddComment operation,
       TinkerPopConnectionState state,
-      ResultReporter rr) throws DbException {
+      ResultReporter resultReporter) throws DbException {
     try {
-      state.executeInTx(g -> {
-        exec(g, LdbcQuerySql.U7,
-            "commentId", op.getCommentId(),
-            "creationDate", op.getCreationDate(),
-            "locationIP", op.getLocationIp(),
-            "browserUsed", op.getBrowserUsed(),
-            "content", op.getContent(),
-            "length", op.getLength(),
-            "authorPersonId", op.getAuthorPersonId(),
-            "countryId", op.getCountryId());
+      state.executeInTx(graph -> {
+        exec(graph, LdbcQuerySql.U7,
+            "commentId", operation.getCommentId(),
+            "creationDate", operation.getCreationDate(),
+            "locationIP", operation.getLocationIp(),
+            "browserUsed", operation.getBrowserUsed(),
+            "content", operation.getContent(),
+            "length", operation.getLength(),
+            "authorPersonId", operation.getAuthorPersonId(),
+            "countryId", operation.getCountryId());
 
-        if (op.getReplyToPostId() != -1) {
-          exec(g, LdbcQuerySql.U7_REPLY_OF_POST,
-              "commentId", op.getCommentId(),
-              "replyToPostId", op.getReplyToPostId());
-        } else if (op.getReplyToCommentId() != -1) {
-          exec(g, LdbcQuerySql.U7_REPLY_OF_COMMENT,
-              "commentId", op.getCommentId(),
-              "replyToCommentId", op.getReplyToCommentId());
+        if (operation.getReplyToPostId() != -1) {
+          exec(graph, LdbcQuerySql.U7_REPLY_OF_POST,
+              "commentId", operation.getCommentId(),
+              "replyToPostId", operation.getReplyToPostId());
+        } else if (operation.getReplyToCommentId() != -1) {
+          exec(graph, LdbcQuerySql.U7_REPLY_OF_COMMENT,
+              "commentId", operation.getCommentId(),
+              "replyToCommentId", operation.getReplyToCommentId());
         }
 
-        for (Long tagId : op.getTagIds()) {
-          exec(g, LdbcQuerySql.U7_HAS_TAG, "commentId", op.getCommentId(), "tagId", tagId);
+        for (Long tagId : operation.getTagIds()) {
+          exec(graph, LdbcQuerySql.U7_HAS_TAG, "commentId", operation.getCommentId(), "tagId", tagId);
         }
       });
-      rr.report(0, LdbcNoResult.INSTANCE, op);
-    } catch (DbException e) {
-      throw e;
+      resultReporter.report(0, LdbcNoResult.INSTANCE, operation);
     } catch (Exception e) {
       throw new DbException("Error executing SQL Update 7", e);
     }

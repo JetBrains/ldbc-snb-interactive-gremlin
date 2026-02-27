@@ -18,24 +18,22 @@ public class SqlUpdate4
 
   @Override
   public void executeOperation(
-      LdbcUpdate4AddForum op,
+      LdbcUpdate4AddForum operation,
       TinkerPopConnectionState state,
-      ResultReporter rr) throws DbException {
+      ResultReporter resultReporter) throws DbException {
     try {
-      state.executeInTx(g -> {
-        exec(g, LdbcQuerySql.U4,
-            "forumId", op.getForumId(),
-            "title", op.getForumTitle(),
-            "creationDate", op.getCreationDate(),
-            "moderatorId", op.getModeratorPersonId());
+      state.executeInTx(graph -> {
+        exec(graph, LdbcQuerySql.U4,
+            "forumId", operation.getForumId(),
+            "title", operation.getForumTitle(),
+            "creationDate", operation.getCreationDate(),
+            "moderatorId", operation.getModeratorPersonId());
 
-        for (Long tagId : op.getTagIds()) {
-          exec(g, LdbcQuerySql.U4_HAS_TAG, "forumId", op.getForumId(), "tagId", tagId);
+        for (Long tagId : operation.getTagIds()) {
+          exec(graph, LdbcQuerySql.U4_HAS_TAG, "forumId", operation.getForumId(), "tagId", tagId);
         }
       });
-      rr.report(0, LdbcNoResult.INSTANCE, op);
-    } catch (DbException e) {
-      throw e;
+      resultReporter.report(0, LdbcNoResult.INSTANCE, operation);
     } catch (Exception e) {
       throw new DbException("Error executing SQL Update 4", e);
     }

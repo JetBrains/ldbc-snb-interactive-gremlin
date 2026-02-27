@@ -19,22 +19,20 @@ public class SqlComplexQuery13
 
   @Override
   public void executeOperation(
-      LdbcQuery13 op,
+      LdbcQuery13 operation,
       TinkerPopConnectionState state,
-      ResultReporter rr) throws DbException {
+      ResultReporter resultReporter) throws DbException {
     try {
-      var result = state.computeInTx(g -> {
-        var row = querySingle(g, LdbcQuerySql.IC13,
-            "person1Id", op.getPerson1IdQ13StartNode(),
-            "person2Id", op.getPerson2IdQ13EndNode());
+      var result = state.computeInTx(graph -> {
+        var row = querySingle(graph, LdbcQuerySql.IC13,
+            "person1Id", operation.getPerson1IdQ13StartNode(),
+            "person2Id", operation.getPerson2IdQ13EndNode());
         if (row == null) {
           return new LdbcQuery13Result(-1);
         }
         return new LdbcQuery13Result(toInt(row.get("pathLength")));
       });
-      rr.report(0, result, op);
-    } catch (DbException e) {
-      throw e;
+      resultReporter.report(0, result, operation);
     } catch (Exception e) {
       throw new DbException("Error executing SQL Complex Query 13", e);
     }

@@ -18,14 +18,14 @@ public class SqlComplexQuery8
 
   @Override
   public void executeOperation(
-      LdbcQuery8 op,
+      LdbcQuery8 operation,
       TinkerPopConnectionState state,
-      ResultReporter rr) throws DbException {
+      ResultReporter resultReporter) throws DbException {
     try {
-      var results = state.computeInTx(g -> {
-        var rows = query(g, LdbcQuerySql.IC8,
-            "personId", op.getPersonIdQ8(),
-            "limit", op.getLimit());
+      var results = state.computeInTx(graph -> {
+        var rows = query(graph, LdbcQuerySql.IC8,
+            "personId", operation.getPersonIdQ8(),
+            "limit", operation.getLimit());
         return rows.stream().map(row -> new LdbcQuery8Result(
             toLong(row.get("personId")),
             toStr(row.get("firstName")),
@@ -35,9 +35,7 @@ public class SqlComplexQuery8
             toStr(row.get("commentContent"))
         )).toList();
       });
-      rr.report(results.size(), results, op);
-    } catch (DbException e) {
-      throw e;
+      resultReporter.report(results.size(), results, operation);
     } catch (Exception e) {
       throw new DbException("Error executing SQL Complex Query 8", e);
     }

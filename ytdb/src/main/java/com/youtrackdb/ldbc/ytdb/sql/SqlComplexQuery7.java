@@ -20,14 +20,14 @@ public class SqlComplexQuery7
 
   @Override
   public void executeOperation(
-      LdbcQuery7 op,
+      LdbcQuery7 operation,
       TinkerPopConnectionState state,
-      ResultReporter rr) throws DbException {
+      ResultReporter resultReporter) throws DbException {
     try {
-      var results = state.computeInTx(g -> {
-        var rows = query(g, LdbcQuerySql.IC7,
-            "personId", op.getPersonIdQ7(),
-            "limit", op.getLimit());
+      var results = state.computeInTx(graph -> {
+        var rows = query(graph, LdbcQuerySql.IC7,
+            "personId", operation.getPersonIdQ7(),
+            "limit", operation.getLimit());
         return rows.stream().map(row -> {
           long likeDate = toDateMillis(row.get("likeCreationDate"));
           long msgDate = toDateMillis(row.get("messageCreationDate"));
@@ -44,9 +44,7 @@ public class SqlComplexQuery7
           );
         }).toList();
       });
-      rr.report(results.size(), results, op);
-    } catch (DbException e) {
-      throw e;
+      resultReporter.report(results.size(), results, operation);
     } catch (Exception e) {
       throw new DbException("Error executing SQL Complex Query 7", e);
     }

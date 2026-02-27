@@ -18,8 +18,8 @@ public class SqlShortQuery3
       TinkerPopConnectionState state,
       ResultReporter resultReporter) throws DbException {
     try {
-      var results = state.computeInTx(g -> {
-        var rows = query(g, LdbcQuerySql.IS3,
+      var results = state.computeInTx(graph -> {
+        var rows = query(graph, LdbcQuerySql.IS3,
             "personId", operation.getPersonIdSQ3());
         return rows.stream().map(row -> new LdbcShortQuery3PersonFriendsResult(
             toLong(row.get("personId")),
@@ -29,8 +29,6 @@ public class SqlShortQuery3
         )).toList();
       });
       resultReporter.report(results.size(), results, operation);
-    } catch (DbException e) {
-      throw e;
     } catch (Exception e) {
       throw new DbException("Error executing Baseline Short Query 3", e);
     }

@@ -18,12 +18,12 @@ public class SqlShortQuery6
       TinkerPopConnectionState state,
       ResultReporter resultReporter) throws DbException {
     try {
-      var result = state.computeInTx(g -> {
+      var result = state.computeInTx(graph -> {
         // Step 1: Find the original Post ID (handles both Post and Comment messages).
         // WHILE-recursive match results can project properties but cannot serve as
         // starting vertices for subsequent edge traversal in the same MATCH chain,
         // so we split into two queries.
-        var postRow = querySingle(g, LdbcQuerySql.IS6_POST,
+        var postRow = querySingle(graph, LdbcQuerySql.IS6_POST,
             "messageId", operation.getMessageForumId());
         if (postRow == null) {
           throw new DbException(
@@ -32,7 +32,7 @@ public class SqlShortQuery6
         long postId = toLong(postRow.get("postId"));
 
         // Step 2: Look up Forum and Moderator from the Post.
-        var row = querySingle(g, LdbcQuerySql.IS6_FORUM, "postId", postId);
+        var row = querySingle(graph, LdbcQuerySql.IS6_FORUM, "postId", postId);
         if (row == null) {
           throw new DbException(
               "No forum found for Post ID: " + postId
@@ -47,8 +47,6 @@ public class SqlShortQuery6
         );
       });
       resultReporter.report(0, result, operation);
-    } catch (DbException e) {
-      throw e;
     } catch (Exception e) {
       throw new DbException("Error executing Baseline Short Query 6", e);
     }

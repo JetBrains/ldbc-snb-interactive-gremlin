@@ -19,15 +19,15 @@ public class SqlComplexQuery12
 
   @Override
   public void executeOperation(
-      LdbcQuery12 op,
+      LdbcQuery12 operation,
       TinkerPopConnectionState state,
-      ResultReporter rr) throws DbException {
+      ResultReporter resultReporter) throws DbException {
     try {
-      var results = state.computeInTx(g -> {
-        var rows = query(g, LdbcQuerySql.IC12,
-            "personId", op.getPersonIdQ12(),
-            "tagClassName", op.getTagClassName(),
-            "limit", op.getLimit());
+      var results = state.computeInTx(graph -> {
+        var rows = query(graph, LdbcQuerySql.IC12,
+            "personId", operation.getPersonIdQ12(),
+            "tagClassName", operation.getTagClassName(),
+            "limit", operation.getLimit());
         return rows.stream().map(row -> new LdbcQuery12Result(
             toLong(row.get("personId")),
             toStr(row.get("firstName")),
@@ -36,9 +36,7 @@ public class SqlComplexQuery12
             toInt(row.get("replyCount"))
         )).toList();
       });
-      rr.report(results.size(), results, op);
-    } catch (DbException e) {
-      throw e;
+      resultReporter.report(results.size(), results, operation);
     } catch (Exception e) {
       throw new DbException("Error executing SQL Complex Query 12", e);
     }

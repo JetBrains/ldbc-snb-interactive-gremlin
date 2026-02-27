@@ -57,7 +57,7 @@ final class LdbcSnbDatabaseExtension implements BeforeAllCallback, ParameterReso
 
   private static Fixture getFixture(ExtensionContext context) {
     ExtensionContext.Store store = context.getRoot().getStore(NAMESPACE);
-    return store.getOrComputeIfAbsent(Fixture.class, __ -> new Fixture(), Fixture.class);
+    return store.getOrComputeIfAbsent(Fixture.class, ignored -> new Fixture(), Fixture.class);
   }
 
   static final class Fixture implements AutoCloseable {

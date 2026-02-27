@@ -18,8 +18,8 @@ public class SqlShortQuery2
       TinkerPopConnectionState state,
       ResultReporter resultReporter) throws DbException {
     try {
-      var results = state.computeInTx(g -> {
-        var rows = query(g, LdbcQuerySql.IS2,
+      var results = state.computeInTx(graph -> {
+        var rows = query(graph, LdbcQuerySql.IS2,
             "personId", operation.getPersonIdSQ2(),
             "limit", operation.getLimit());
         return rows.stream().map(row -> new LdbcShortQuery2PersonPostsResult(
@@ -33,8 +33,6 @@ public class SqlShortQuery2
         )).toList();
       });
       resultReporter.report(results.size(), results, operation);
-    } catch (DbException e) {
-      throw e;
     } catch (Exception e) {
       throw new DbException("Error executing Baseline Short Query 2", e);
     }

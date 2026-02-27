@@ -18,8 +18,8 @@ public class SqlShortQuery1
       TinkerPopConnectionState state,
       ResultReporter resultReporter) throws DbException {
     try {
-      var result = state.computeInTx(g -> {
-        var row = querySingle(g, LdbcQuerySql.IS1,
+      var result = state.computeInTx(graph -> {
+        var row = querySingle(graph, LdbcQuerySql.IS1,
             "personId", operation.getPersonIdSQ1());
         if (row == null) {
           throw new DbException("No person found with ID: " + operation.getPersonIdSQ1());
@@ -36,8 +36,6 @@ public class SqlShortQuery1
         );
       });
       resultReporter.report(0, result, operation);
-    } catch (DbException e) {
-      throw e;
     } catch (Exception e) {
       throw new DbException("Error executing Baseline Short Query 1", e);
     }
