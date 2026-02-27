@@ -1,0 +1,2 @@
+CREATE EDGE HAS_TAG FROM (SELECT FROM Forum WHERE id = :forumId)
+  TO (SELECT FROM Tag WHERE id = :tagId)

@@ -3,35 +3,36 @@ SELECT personId, firstName, lastName,
   gender, birthday, cityName
 FROM (
   MATCH {class: Person, as: start, where: (id = :personId)}
-    .out('knows'){as: directFriend}
-    .out('knows'){as: fof,
-      where: ($currentMatch != $matched.start)},
-    NOT {as: start}
-      .out('knows'){as: fof}
+    .out('KNOWS'){as: directFriend}
+    .out('KNOWS'){as: fof,
+      where: ($currentMatch <> $matched.start
+        AND $currentMatch NOT IN $matched.start.out('KNOWS')
+      )}
+    .out('IS_LOCATED_IN'){as: city}
   RETURN DISTINCT fof.id as personId, fof.firstName as firstName,
     fof.lastName as lastName, fof.gender as gender,
     fof.birthday as birthday,
-    fof.out('IS_LOCATED_IN')[0].name as cityName,
-    fof as fofVertex, start as startVertex
+    city.name as cityName,
+    fof as fofVertex,
+    start as startVertex
 )
-LET $tags = (
-  SELECT set(out('HAS_INTEREST').@rid) as tagRids FROM Person
-  WHERE @rid = $parent.$current.startVertex
-),
-$posScore = (
+LET $posScore = (
   SELECT count(*) as cnt FROM (
     SELECT expand(in('HAS_CREATOR')) FROM Person
     WHERE @rid = $parent.$current.fofVertex
   ) WHERE @class = 'Post'
-    AND out('HAS_TAG').@rid CONTAINSANY $tags[0].tagRids
+    AND set(out('HAS_TAG').name) CONTAINSANY $parent.$current.startVertex.out('HAS_INTEREST').name
 ),
 $negScore = (
   SELECT count(*) as cnt FROM (
     SELECT expand(in('HAS_CREATOR')) FROM Person
     WHERE @rid = $parent.$current.fofVertex
   ) WHERE @class = 'Post'
-    AND NOT (out('HAS_TAG').@rid CONTAINSANY $tags[0].tagRids)
+    AND NOT (set(out('HAS_TAG').name) CONTAINSANY $parent.$current.startVertex.out('HAS_INTEREST').name)
 )
-WHERE birthday >= :startDate AND birthday < :endDate
+WHERE (
+  (:wrap = true AND (birthday.format('MMdd', 'UTC') >= :startMd OR birthday.format('MMdd', 'UTC') < :endMd))
+  OR (:wrap = false AND birthday.format('MMdd', 'UTC') >= :startMd AND birthday.format('MMdd', 'UTC') < :endMd)
+)
 ORDER BY commonInterestScore DESC, personId ASC
 LIMIT :limit

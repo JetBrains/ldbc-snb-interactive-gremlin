@@ -1,6 +1,6 @@
 package com.youtrackdb.ldbc.ytdb;
 
-import com.youtrackdb.ldbc.ytdb.baseline.LdbcQuerySql;
+import com.youtrackdb.ldbc.ytdb.sql.LdbcQuerySql;
 import com.jetbrains.youtrackdb.api.gremlin.YTDBGraphTraversalSource;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -10,7 +10,7 @@ import java.util.Map;
 
 @Tag("profiling")
 @ExtendWith(LdbcSnbDatabaseExtension.class)
-class BaselineShortQuery7SqlTest {
+class SqlShortQuery7SqlTest {
 
   @Test
   void is7_sqlMatch(YTDBGraphTraversalSource g) throws Exception {

@@ -1,0 +1,2 @@
+CREATE EDGE HAS_TAG FROM (SELECT FROM Comment WHERE id = :commentId)
+  TO (SELECT FROM Tag WHERE id = :tagId)

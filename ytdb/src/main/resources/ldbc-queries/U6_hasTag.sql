@@ -1,0 +1,2 @@
+CREATE EDGE HAS_TAG FROM (SELECT FROM Post WHERE id = :postId)
+  TO (SELECT FROM Tag WHERE id = :tagId)

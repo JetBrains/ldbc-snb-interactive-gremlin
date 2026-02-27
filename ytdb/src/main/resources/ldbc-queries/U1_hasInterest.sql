@@ -1,0 +1,2 @@
+CREATE EDGE HAS_INTEREST FROM (SELECT FROM Person WHERE id = :personId)
+  TO (SELECT FROM Tag WHERE id = :tagId)

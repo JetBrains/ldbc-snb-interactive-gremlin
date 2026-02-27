@@ -29,6 +29,7 @@ final class LdbcSnbDatabaseExtension implements BeforeAllCallback, ParameterReso
       ExtensionContext.Namespace.create(LdbcSnbDatabaseExtension.class);
   private static final String BACKUP_RESOURCE_DIR = "/backups";
   private static final String DATABASE_NAME = "ldbc_snb";
+  private static final String WORK_DIR_NAME = "test-data";
 
   @Override
   public void beforeAll(ExtensionContext context) {
@@ -62,18 +63,29 @@ final class LdbcSnbDatabaseExtension implements BeforeAllCallback, ParameterReso
   static final class Fixture implements AutoCloseable {
     private final YouTrackDB db;
     private final YTDBGraphTraversalSource traversal;
-    private final Path tempDir;
+    private final Path workDir;
 
     Fixture() {
       try {
-        tempDir = Files.createTempDirectory("ldbc-snb-profiling-");
-        Path backupDir = tempDir.resolve("backup");
-        copyResourceDirectory(BACKUP_RESOURCE_DIR, backupDir);
-
-        Path dataDir = tempDir.resolve("databases");
+        workDir = resolveWorkDir();
+        Path backupDir = workDir.resolve("backup");
+        Path dataDir = workDir.resolve("databases");
         Files.createDirectories(dataDir);
-        db = YourTracks.instance(dataDir.toString());
-        db.restore(DATABASE_NAME, backupDir.toString());
+
+        if (!Files.isDirectory(dataDir.resolve(DATABASE_NAME))) {
+          Files.createDirectories(backupDir);
+          boolean backupEmpty;
+          try (Stream<Path> walk = Files.list(backupDir)) {
+            backupEmpty = walk.findAny().isEmpty();
+          }
+          if (backupEmpty) {
+            copyResourceDirectory(BACKUP_RESOURCE_DIR, backupDir);
+          }
+          db = YourTracks.instance(dataDir.toString());
+          db.restore(DATABASE_NAME, backupDir.toString());
+        } else {
+          db = YourTracks.instance(dataDir.toString());
+        }
 
         traversal = db.openTraversal(DATABASE_NAME, "admin", "admin");
         traversal.computeInTx(g -> g.V().hasLabel(PERSON).count().next());
@@ -102,12 +114,25 @@ final class LdbcSnbDatabaseExtension implements BeforeAllCallback, ParameterReso
       } catch (Exception e) {
         // best-effort cleanup
       }
-      try {
-        deleteRecursively(tempDir);
-      } catch (IOException e) {
-        // best-effort cleanup
-      }
     }
+  }
+
+  private static Path resolveWorkDir() throws Exception {
+    Path base = Path.of(
+        LdbcSnbDatabaseExtension.class.getProtectionDomain()
+            .getCodeSource()
+            .getLocation()
+            .toURI());
+    Path cursor = base;
+    while (cursor != null && !Files.exists(cursor.resolve("pom.xml"))) {
+      cursor = cursor.getParent();
+    }
+    if (cursor == null) {
+      throw new IllegalStateException("Unable to locate module root for test-data directory");
+    }
+    Path workDir = cursor.resolve(WORK_DIR_NAME);
+    Files.createDirectories(workDir);
+    return workDir;
   }
 
   private static void copyResourceDirectory(String resourceDir, Path target) throws Exception {
@@ -133,17 +158,4 @@ final class LdbcSnbDatabaseExtension implements BeforeAllCallback, ParameterReso
     }
   }
 
-  private static void deleteRecursively(Path path) throws IOException {
-    if (!Files.exists(path)) return;
-    try (Stream<Path> walk = Files.walk(path)) {
-      walk.sorted(java.util.Comparator.reverseOrder())
-          .forEach(p -> {
-            try {
-              Files.deleteIfExists(p);
-            } catch (IOException e) {
-              // best-effort cleanup
-            }
-          });
-    }
-  }
 }

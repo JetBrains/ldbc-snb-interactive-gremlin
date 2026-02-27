@@ -1,5 +1,5 @@
 MATCH {class: Person, as: p, where: (id = :personId)}
-  .out('knows'){as: friend}
+  .out('KNOWS'){as: friend}
   .in('HAS_CREATOR'){class: Post, as: newPost,
     where: (creationDate >= :startDate AND creationDate < :endDate)}
   .out('HAS_TAG'){as: tag},
