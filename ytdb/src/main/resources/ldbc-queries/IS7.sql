@@ -1,4 +1,4 @@
-MATCH {class: V, as: msg, where: (id = :messageId)}
+MATCH {class: Message, as: msg, where: (id = :messageId)}
   .out('HAS_CREATOR'){as: author},
   {as: msg}
   .in('REPLY_OF'){as: reply}
