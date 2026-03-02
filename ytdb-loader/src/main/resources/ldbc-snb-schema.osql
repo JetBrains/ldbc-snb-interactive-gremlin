@@ -49,23 +49,19 @@ CREATE PROPERTY Forum.id LONG;
 CREATE PROPERTY Forum.title STRING;
 CREATE PROPERTY Forum.creationDate DATETIME;
 
-CREATE CLASS Post EXTENDS V;
-CREATE PROPERTY Post.id LONG;
-CREATE PROPERTY Post.imageFile STRING;
-CREATE PROPERTY Post.creationDate DATETIME;
-CREATE PROPERTY Post.locationIP STRING;
-CREATE PROPERTY Post.browserUsed STRING;
-CREATE PROPERTY Post.language STRING;
-CREATE PROPERTY Post.content STRING;
-CREATE PROPERTY Post.length INTEGER;
+CREATE CLASS Message EXTENDS V;
+CREATE PROPERTY Message.id LONG;
+CREATE PROPERTY Message.creationDate DATETIME;
+CREATE PROPERTY Message.locationIP STRING;
+CREATE PROPERTY Message.browserUsed STRING;
+CREATE PROPERTY Message.content STRING;
+CREATE PROPERTY Message.length INTEGER;
 
-CREATE CLASS Comment EXTENDS V;
-CREATE PROPERTY Comment.id LONG;
-CREATE PROPERTY Comment.creationDate DATETIME;
-CREATE PROPERTY Comment.locationIP STRING;
-CREATE PROPERTY Comment.browserUsed STRING;
-CREATE PROPERTY Comment.content STRING;
-CREATE PROPERTY Comment.length INTEGER;
+CREATE CLASS Post EXTENDS Message;
+CREATE PROPERTY Post.imageFile STRING;
+CREATE PROPERTY Post.language STRING;
+
+CREATE CLASS Comment EXTENDS Message;
 
 -- ==================== EDGE CLASSES ====================
 
@@ -113,8 +109,7 @@ CREATE INDEX TagClass.id ON TagClass(id) UNIQUE;
 CREATE INDEX Tag.id ON Tag(id) UNIQUE;
 CREATE INDEX Person.id ON Person(id) UNIQUE;
 CREATE INDEX Forum.id ON Forum(id) UNIQUE;
-CREATE INDEX Post.id ON Post(id) UNIQUE;
-CREATE INDEX Comment.id ON Comment(id) UNIQUE;
+CREATE INDEX Message.id ON Message(id) UNIQUE;
 
 -- Query-driven indexes (based on LDBC query patterns)
 CREATE INDEX Place.name ON Place(name) NOTUNIQUE;
@@ -124,8 +119,7 @@ CREATE INDEX Tag.name ON Tag(name) NOTUNIQUE;
 CREATE INDEX TagClass.name ON TagClass(name) NOTUNIQUE;
 CREATE INDEX Person.firstName ON Person(firstName) NOTUNIQUE;
 CREATE INDEX Person.birthday ON Person(birthday) NOTUNIQUE;
-CREATE INDEX Post.creationDate ON Post(creationDate) NOTUNIQUE;
-CREATE INDEX Comment.creationDate ON Comment(creationDate) NOTUNIQUE;
+CREATE INDEX Message.creationDate ON Message(creationDate) NOTUNIQUE;
 CREATE INDEX Forum.creationDate ON Forum(creationDate) NOTUNIQUE;
 CREATE INDEX HAS_MEMBER.joinDate ON HAS_MEMBER(joinDate) NOTUNIQUE;
 CREATE INDEX WORK_AT.workFrom ON WORK_AT(workFrom) NOTUNIQUE;
@@ -140,6 +134,7 @@ ALTER CLASS TagClass STRICT_MODE true;
 ALTER CLASS Tag STRICT_MODE true;
 ALTER CLASS Person STRICT_MODE true;
 ALTER CLASS Forum STRICT_MODE true;
+ALTER CLASS Message STRICT_MODE true;
 ALTER CLASS Post STRICT_MODE true;
 ALTER CLASS Comment STRICT_MODE true;
 
